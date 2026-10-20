@@ -1,0 +1,41 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: nail-demo-backend
+  datasource:
+    url: "jdbc:mysql://localhost:3306/nail_demo?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+    username: root
+    # 请按本地 MySQL 实际密码修改；当前为阶段 0 约定的本地演示密码。
+    password: "123456"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+  sql:
+    init:
+      # 阶段 0 每次启动都执行初始化脚本；脚本使用幂等写法，可重复执行。
+      # 若首次启动后 data.sql 仍有主键冲突，可将 always 改为 never。
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      encoding: UTF-8
+
+app:
+  upload-dir: ./uploads
+
+jwt:
+  # 至少 32 字符；生产环境请通过环境变量或外部配置覆盖，不要使用示例值。
+  secret: "nail-demo-secret-key-please-change-123456"
+  expiration-hours: 24
