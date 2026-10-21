@@ -36,3 +36,9 @@ Thumbs.db
 
 # ===== 本地配置（如果以后有 application-local.yml）=====
 backend/src/main/resources/application-local.yml
+
+# ===== 本地构建/联调缓存 =====
+.runtime/
+backend/.m2-test/
+frontend/.npm-cache/
+frontend/vite.test.config.js
