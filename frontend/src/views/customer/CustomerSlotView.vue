@@ -1,8 +1,12 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listStaffs } from '../../api/staff'
 import { listSlots } from '../../api/schedule'
+import { listServiceTypes } from '../../api/serviceType'
+import { createAppointment } from '../../api/appointment'
+
+const emit = defineEmits(['appointment-created'])
 
 const staffs = ref([])
 const selectedStaffId = ref(null)
@@ -10,10 +14,32 @@ const selectedDate = ref(formatDate(new Date()))
 const slots = ref([])
 const loadingStaffs = ref(false)
 const loadingSlots = ref(false)
+const loadingServices = ref(false)
+const submitting = ref(false)
+const serviceTypes = ref([])
+const dialogVisible = ref(false)
+const selectedSlot = ref(null)
+const bookingForm = reactive({
+  serviceTypeId: null
+})
 
 const selectedStaff = computed(
   () => staffs.value.find((staff) => staff.staffId === selectedStaffId.value) || null
 )
+const selectedServiceType = computed(
+  () => serviceTypes.value.find((service) => service.id === bookingForm.serviceTypeId) || null
+)
+const selectedSlotEnd = computed(() => {
+  if (!selectedSlot.value || !selectedServiceType.value) {
+    return ''
+  }
+  const start = new Date(selectedSlot.value.slotStart.replace(' ', 'T'))
+  if (Number.isNaN(start.getTime())) {
+    return ''
+  }
+  start.setMinutes(start.getMinutes() + selectedServiceType.value.estDurationMax)
+  return formatDateTime(start)
+})
 
 const statusConfig = {
   AVAILABLE: { label: '可申请', type: 'success' },
@@ -28,6 +54,12 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function formatDateTime(date) {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${formatDate(date)} ${hours}:${minutes}:00`
 }
 
 function disabledPastDate(date) {
@@ -79,9 +111,62 @@ async function loadSlots() {
   }
 }
 
+async function loadServiceTypes() {
+  if (loadingServices.value) {
+    return
+  }
+  loadingServices.value = true
+  try {
+    const response = await listServiceTypes()
+    serviceTypes.value = response.data.data || []
+    if (!bookingForm.serviceTypeId && serviceTypes.value.length > 0) {
+      bookingForm.serviceTypeId = serviceTypes.value[0].id
+    }
+  } catch (error) {
+    serviceTypes.value = []
+  } finally {
+    loadingServices.value = false
+  }
+}
+
 function handleSlotClick(slot) {
   if (slot.status === 'AVAILABLE') {
-    ElMessage.info('阶段 3 将开放预约申请')
+    selectedSlot.value = slot
+    bookingForm.serviceTypeId = null
+    dialogVisible.value = true
+    loadServiceTypes()
+    return
+  }
+  if (slot.status === 'BOOKED') {
+    ElMessage.info('该时段已被预约')
+    return
+  }
+  ElMessage.info(`该时段当前为${statusInfo(slot.status).label}`)
+}
+
+async function submitAppointment() {
+  if (!selectedSlot.value || !selectedStaffId.value) {
+    return
+  }
+  if (!bookingForm.serviceTypeId) {
+    ElMessage.warning('请选择项目类型')
+    return
+  }
+
+  submitting.value = true
+  try {
+    await createAppointment({
+      staffId: selectedStaffId.value,
+      serviceTypeId: bookingForm.serviceTypeId,
+      requestedStart: selectedSlot.value.slotStart
+    })
+    ElMessage.success('预约申请已提交，等待美甲师确认')
+    dialogVisible.value = false
+    emit('appointment-created')
+  } catch (error) {
+    // 错误提示由 request.js 统一处理。
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -157,6 +242,48 @@ onMounted(loadStaffs)
         <el-empty v-else-if="!loadingSlots" description="该美甲师当天暂无排班" />
       </div>
     </el-card>
+
+    <el-dialog v-model="dialogVisible" title="提交预约申请" width="480px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="美甲师">
+          {{ selectedStaff?.realName || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="开始时间">
+          {{ selectedSlot?.slotStart || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item v-if="selectedSlotEnd" label="预计结束时间">
+          {{ selectedSlotEnd }}
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <el-form label-width="90px" class="booking-form">
+        <el-form-item label="项目类型">
+          <el-select
+            v-model="bookingForm.serviceTypeId"
+            :loading="loadingServices"
+            placeholder="请选择项目类型"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="service in serviceTypes"
+              :key="service.id"
+              :label="`${service.name}（${service.estDurationMax} 分钟）`"
+              :value="service.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="selectedServiceType" label="预计时长">
+          {{ selectedServiceType.estDurationMax }} 分钟
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitAppointment">
+          提交申请
+        </el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -222,5 +349,9 @@ onMounted(loadStaffs)
   color: #303133;
   font-size: 14px;
   font-weight: 500;
+}
+
+.booking-form {
+  margin-top: 20px;
 }
 </style>

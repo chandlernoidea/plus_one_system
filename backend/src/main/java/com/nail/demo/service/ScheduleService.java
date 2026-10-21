@@ -7,17 +7,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.nail.demo.common.AppointmentStatus;
 import com.nail.demo.common.CurrentUser;
 import com.nail.demo.common.CurrentUserHolder;
 import com.nail.demo.dto.ScheduleRequest;
 import com.nail.demo.dto.ScheduleResponse;
 import com.nail.demo.dto.TimeSlotResponse;
+import com.nail.demo.entity.Appointment;
 import com.nail.demo.entity.StaffSchedule;
 import com.nail.demo.entity.TimeSlot;
+import com.nail.demo.repository.AppointmentRepository;
+import com.nail.demo.repository.StaffProfileRepository;
 import com.nail.demo.repository.StaffScheduleRepository;
 import com.nail.demo.repository.TimeSlotRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -26,16 +32,26 @@ import org.springframework.util.StringUtils;
 public class ScheduleService {
 
     private static final int SLOT_MINUTES = 15;
+    private static final int CONFLICT_LOOKBACK_HOURS = 24;
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String STATUS_AVAILABLE = "AVAILABLE";
+    private static final String STATUS_BOOKED = "BOOKED";
     private static final String TYPE_NORMAL = "NORMAL";
     private static final String TYPE_LEAVE = "LEAVE";
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_STAFF = "STAFF";
+    private static final List<String> OCCUPYING_STATUSES = List.of(
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.IN_SERVICE,
+            AppointmentStatus.RESCHEDULING
+    );
 
     private final StaffScheduleRepository staffScheduleRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final StaffProfileRepository staffProfileRepository;
     private final StaffService staffService;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<ScheduleResponse> list(Long staffId, LocalDate from, LocalDate to) {
@@ -48,11 +64,12 @@ public class ScheduleService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ScheduleResponse create(ScheduleRequest req) {
         validateTimes(req.getStartTime(), req.getEndTime());
 
         Long staffId = staffService.resolveStaffId(req.getStaffId());
+        lockStaff(staffId);
         ensureNoOverlap(staffId, req.getWorkDate(), req.getStartTime(), req.getEndTime(), null);
 
         StaffSchedule schedule = new StaffSchedule();
@@ -69,17 +86,32 @@ public class ScheduleService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ScheduleResponse update(Long id, ScheduleRequest req) {
+        StaffSchedule snapshot = staffScheduleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("排班不存在"));
+        checkCanModify(snapshot);
+
+        Long staffId = snapshot.getStaffId();
+        lockStaff(staffId);
+        entityManager.clear();
+
         StaffSchedule schedule = staffScheduleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("排班不存在"));
-
         checkCanModify(schedule);
         validateTimes(req.getStartTime(), req.getEndTime());
-        ensureNoOverlap(schedule.getStaffId(), req.getWorkDate(),
-                req.getStartTime(), req.getEndTime(), schedule.getId());
 
         LocalDate oldWorkDate = schedule.getWorkDate();
+        LocalDateTime oldStart = oldWorkDate.atTime(schedule.getStartTime());
+        LocalDateTime oldEnd = oldWorkDate.atTime(schedule.getEndTime());
+        LocalDateTime newStart = req.getWorkDate().atTime(req.getStartTime());
+        LocalDateTime newEnd = req.getWorkDate().atTime(req.getEndTime());
+
+        ensureNoConfirmedConflict(staffId, oldStart, oldEnd);
+        ensureNoConfirmedConflict(staffId, newStart, newEnd);
+        ensureNoOverlap(staffId, req.getWorkDate(),
+                req.getStartTime(), req.getEndTime(), schedule.getId());
+
         schedule.setWorkDate(req.getWorkDate());
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
@@ -94,24 +126,44 @@ public class ScheduleService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void delete(Long id) {
+        StaffSchedule snapshot = staffScheduleRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("排班不存在"));
+        checkCanModify(snapshot);
+
+        Long staffId = snapshot.getStaffId();
+        lockStaff(staffId);
+        entityManager.clear();
+
         StaffSchedule schedule = staffScheduleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("排班不存在"));
-
         checkCanModify(schedule);
-        Long staffId = schedule.getStaffId();
+
         LocalDate workDate = schedule.getWorkDate();
+        LocalDateTime start = workDate.atTime(schedule.getStartTime());
+        LocalDateTime end = workDate.atTime(schedule.getEndTime());
+        ensureNoConfirmedConflict(staffId, start, end);
+
         staffScheduleRepository.delete(schedule);
         rebuildTimeSlots(staffId, workDate);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void rebuildTimeSlots(Long staffId, LocalDate workDate) {
+        // 所有调用方都必须持有该美甲师的锁；这里再次加锁以保证直接调用也安全。
+        lockStaff(staffId);
+
         LocalDateTime dayStart = workDate.atStartOfDay();
         LocalDateTime dayEnd = dayStart.plusDays(1);
 
-        // TODO 阶段 3 引入预约后，需要改为只删除未被 CONFIRMED/IN_SERVICE 预约占用的槽
+        List<Appointment> occupyingAppointments = appointmentRepository
+                .findByStaffIdAndStatusInAndConfirmedStartBetween(
+                        staffId,
+                        OCCUPYING_STATUSES,
+                        dayStart.minusHours(CONFLICT_LOOKBACK_HOURS),
+                        dayEnd);
+
         timeSlotRepository.deleteByStaffIdAndSlotStartBetween(staffId, dayStart, dayEnd);
         // 先执行删除，避免同一事务内新槽插入排在旧槽删除之前触发唯一键冲突。
         timeSlotRepository.flush();
@@ -143,6 +195,23 @@ public class ScheduleService {
             }
         }
 
+        // 重建后恢复已确认/服务中预约的占用状态，避免已占用槽丢失。
+        for (Appointment appointment : occupyingAppointments) {
+            if (appointment.getConfirmedStart() == null
+                    || appointment.getEstDurationMinutes() == null) {
+                continue;
+            }
+            LocalDateTime appointmentStart = appointment.getConfirmedStart();
+            LocalDateTime appointmentEnd = appointmentStart
+                    .plusMinutes(appointment.getEstDurationMinutes());
+            for (TimeSlot slot : slots) {
+                if (!slot.getSlotStart().isBefore(appointmentStart)
+                        && slot.getSlotStart().isBefore(appointmentEnd)) {
+                    slot.setStatus(STATUS_BOOKED);
+                }
+            }
+        }
+
         timeSlotRepository.saveAll(slots);
     }
 
@@ -158,10 +227,46 @@ public class ScheduleService {
         LocalDateTime dayStart = date.atStartOfDay();
         LocalDateTime dayEnd = dayStart.plusDays(1);
         return timeSlotRepository
-                .findByStaffIdAndSlotStartBetweenOrderBySlotStartAsc(staffId, dayStart, dayEnd)
+                .findByStaffIdAndSlotStartGreaterThanEqualAndSlotStartLessThanOrderBySlotStartAsc(
+                        staffId, dayStart, dayEnd)
                 .stream()
                 .map(this::toTimeSlotResponse)
                 .toList();
+    }
+
+    private void lockStaff(Long staffId) {
+        if (staffId == null) {
+            throw new IllegalArgumentException("美甲师不能为空");
+        }
+        staffProfileRepository.findByIdForUpdate(staffId)
+                .orElseThrow(() -> new IllegalArgumentException("美甲师不存在"));
+    }
+
+    private void ensureNoConfirmedConflict(Long staffId,
+                                           LocalDateTime intervalStart,
+                                           LocalDateTime intervalEnd) {
+        LocalDateTime lookbackStart = intervalStart.minusHours(CONFLICT_LOOKBACK_HOURS);
+        List<Appointment> candidates = appointmentRepository
+                .findByStaffIdAndStatusInAndConfirmedStartBetween(
+                        staffId, OCCUPYING_STATUSES, lookbackStart, intervalEnd);
+
+        for (Appointment appointment : candidates) {
+            if (appointment.getConfirmedStart() == null
+                    || appointment.getEstDurationMinutes() == null) {
+                continue;
+            }
+            LocalDateTime appointmentEnd = appointment.getConfirmedStart()
+                    .plusMinutes(appointment.getEstDurationMinutes());
+            if (overlaps(intervalStart, intervalEnd,
+                    appointment.getConfirmedStart(), appointmentEnd)) {
+                throw new IllegalArgumentException("该时间段存在已确认预约，请先取消或改约");
+            }
+        }
+    }
+
+    private boolean overlaps(LocalDateTime aStart, LocalDateTime aEnd,
+                             LocalDateTime bStart, LocalDateTime bEnd) {
+        return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
     }
 
     private void validateDateRange(LocalDate from, LocalDate to) {

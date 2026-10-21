@@ -115,3 +115,47 @@ CREATE TABLE IF NOT EXISTS time_slot (
     PRIMARY KEY (id),
     UNIQUE KEY uk_time_slot_staff_start (staff_id, slot_start)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '可预约时间段';
+
+CREATE TABLE IF NOT EXISTS appointment_prep (
+    id                 BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
+    appointment_id     BIGINT        NOT NULL COMMENT '预约 ID',
+    style_description  VARCHAR(1000) DEFAULT NULL COMMENT '款式说明',
+    effect_image_url   VARCHAR(500)  DEFAULT NULL COMMENT '效果图地址',
+    material_json      TEXT          NULL COMMENT '物料清单 JSON 字符串',
+    staff_note         VARCHAR(500)  DEFAULT NULL COMMENT '美甲师备注',
+    prep_status        VARCHAR(20)   NOT NULL DEFAULT 'PENDING' COMMENT '工单状态',
+    created_at         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_appointment_prep_appointment (appointment_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '款式物料工单';
+
+CREATE TABLE IF NOT EXISTS appointment_reschedule (
+    id             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    appointment_id BIGINT       NOT NULL COMMENT '预约 ID',
+    proposer_id    BIGINT       NOT NULL COMMENT '提案人用户 ID',
+    proposed_start DATETIME     NOT NULL COMMENT '新开始时间',
+    status         VARCHAR(20)  NOT NULL COMMENT '提案状态',
+    expire_at      DATETIME     NOT NULL COMMENT '提案过期时间',
+    responded_at   DATETIME     DEFAULT NULL COMMENT '响应时间',
+    reason         VARCHAR(500) DEFAULT NULL COMMENT '改约原因',
+    created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_reschedule_appointment_id (appointment_id),
+    KEY idx_reschedule_status_expire (status, expire_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '改约提案';
+
+CREATE TABLE IF NOT EXISTS review (
+    id             BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
+    appointment_id BIGINT        NOT NULL COMMENT '预约 ID',
+    customer_id    BIGINT        NOT NULL COMMENT '顾客用户 ID',
+    staff_id       BIGINT        NOT NULL COMMENT '美甲师 ID',
+    rating         INT           NOT NULL COMMENT '评分 1-5',
+    content        VARCHAR(1000) NOT NULL COMMENT '评价内容',
+    image_urls     TEXT          NULL COMMENT '评价图片地址，多个用逗号分隔',
+    created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_review_appointment (appointment_id),
+    KEY idx_review_customer (customer_id),
+    KEY idx_review_staff (staff_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务评价';

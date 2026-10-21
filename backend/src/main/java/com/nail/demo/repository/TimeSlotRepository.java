@@ -11,6 +11,9 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
     List<TimeSlot> findByStaffIdAndSlotStartBetweenOrderBySlotStartAsc(
             Long staffId, LocalDateTime from, LocalDateTime to);
 
+    List<TimeSlot> findByStaffIdAndSlotStartGreaterThanEqualAndSlotStartLessThanOrderBySlotStartAsc(
+            Long staffId, LocalDateTime from, LocalDateTime to);
+
     void deleteByStaffIdAndSlotStartBetween(Long staffId, LocalDateTime from, LocalDateTime to);
 
     boolean existsByStaffIdAndSlotStart(Long staffId, LocalDateTime slotStart);

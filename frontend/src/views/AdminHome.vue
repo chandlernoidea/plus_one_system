@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
+import AdminPrepList from './admin/AdminPrepList.vue'
+import AdminReviewList from './admin/AdminReviewList.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -36,9 +38,19 @@ function handleLogout() {
 
     <main class="home-main">
       <h1 class="page-title">管理员首页</h1>
-      <el-card shadow="never">
-        <el-empty description="阶段 2 管理员暂不开放排班编辑，阶段 3 再加" />
-      </el-card>
+      <el-tabs class="home-tabs">
+        <el-tab-pane label="今日物料">
+          <AdminPrepList />
+        </el-tab-pane>
+        <el-tab-pane label="评价">
+          <AdminReviewList />
+        </el-tab-pane>
+        <el-tab-pane label="占位">
+          <el-card shadow="never">
+            <el-empty description="阶段 5+ 将在此展示更多管理功能" />
+          </el-card>
+        </el-tab-pane>
+      </el-tabs>
     </main>
   </div>
 </template>
@@ -86,5 +98,11 @@ function handleLogout() {
   margin: 0 0 20px;
   color: #303133;
   font-size: 24px;
+}
+
+.home-tabs {
+  padding: 16px 20px 20px;
+  background: #ffffff;
+  border-radius: 8px;
 }
 </style>

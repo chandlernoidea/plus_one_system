@@ -1,11 +1,14 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import CustomerSlotView from './customer/CustomerSlotView.vue'
+import CustomerAppointments from './customer/CustomerAppointments.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const activeTab = ref('booking')
+const appointmentsRef = ref(null)
 
 const displayName = computed(
   () => userStore.userInfo?.realName || userStore.userInfo?.username || ''
@@ -23,6 +26,22 @@ function handleLogout() {
   userStore.logout()
   router.replace('/login')
 }
+
+async function refreshAppointments() {
+  await nextTick()
+  appointmentsRef.value?.refresh()
+}
+
+function handleAppointmentCreated() {
+  activeTab.value = 'appointments'
+  refreshAppointments()
+}
+
+function handleTabChange(name) {
+  if (name === 'appointments') {
+    refreshAppointments()
+  }
+}
 </script>
 
 <template>
@@ -36,8 +55,14 @@ function handleLogout() {
     </header>
 
     <main class="home-main">
-      <h1 class="page-title">查看美甲师档期</h1>
-      <CustomerSlotView />
+      <el-tabs v-model="activeTab" class="home-tabs" @tab-change="handleTabChange">
+        <el-tab-pane label="预约美甲" name="booking">
+          <CustomerSlotView @appointment-created="handleAppointmentCreated" />
+        </el-tab-pane>
+        <el-tab-pane label="我的预约" name="appointments">
+          <CustomerAppointments ref="appointmentsRef" />
+        </el-tab-pane>
+      </el-tabs>
     </main>
   </div>
 </template>
@@ -81,9 +106,9 @@ function handleLogout() {
   padding: 0 24px;
 }
 
-.page-title {
-  margin: 0 0 20px;
-  color: #303133;
-  font-size: 24px;
+.home-tabs {
+  padding: 16px 20px 20px;
+  background: #ffffff;
+  border-radius: 8px;
 }
 </style>
