@@ -30,6 +30,7 @@ public class ReviewResponse {
 
     private Integer rating;
     private String content;
+    private String sentiment;
     private List<String> imageUrls;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

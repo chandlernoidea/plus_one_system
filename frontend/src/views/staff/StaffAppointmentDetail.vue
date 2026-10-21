@@ -37,6 +37,7 @@ const savingPrep = ref(false)
 const rescheduleVisible = ref(false)
 const completeDialogVisible = ref(false)
 const finishImageUrls = ref([])
+const completionAmount = ref(0)
 const lifecycleLoading = ref(false)
 const responding = ref(false)
 const prepLoaded = ref(false)
@@ -246,6 +247,7 @@ async function handleNoShow() {
 
 function openCompleteDialog() {
   finishImageUrls.value = []
+  completionAmount.value = 0
   completeDialogVisible.value = true
 }
 
@@ -253,10 +255,15 @@ async function submitComplete() {
   if (!props.appointment) {
     return
   }
+  if (completionAmount.value === null || completionAmount.value < 0) {
+    ElMessage.warning('订单金额不能小于0')
+    return
+  }
   lifecycleLoading.value = true
   try {
     await completeAppointment(props.appointment.id, {
-      finishImageUrls: finishImageUrls.value
+      finishImageUrls: finishImageUrls.value,
+      totalAmount: Number(completionAmount.value)
     })
     ElMessage.success('服务已完成')
     completeDialogVisible.value = false
@@ -437,6 +444,10 @@ function handleRescheduleSuccess() {
 
       <el-dialog v-model="completeDialogVisible" title="完成服务" width="500px">
         <el-form label-width="92px">
+          <el-form-item label="订单金额" required>
+            <el-input-number v-model="completionAmount" :min="0" :precision="2" :step="50" />
+            <span class="amount-tip">用于月度业绩与提成结算</span>
+          </el-form-item>
           <el-form-item label="完工图">
             <MultiImageUploader v-model="finishImageUrls" :limit="6" />
           </el-form-item>
@@ -499,6 +510,12 @@ function handleRescheduleSuccess() {
 
 .prep-form {
   padding-top: 4px;
+}
+
+.amount-tip {
+  margin-left: 8px;
+  color: #909399;
+  font-size: 12px;
 }
 
 .finish-images {

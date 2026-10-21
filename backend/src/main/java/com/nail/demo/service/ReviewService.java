@@ -81,6 +81,7 @@ public class ReviewService {
         review.setCustomerId(appointment.getCustomerId());
         review.setStaffId(appointment.getStaffId());
         review.setRating(req.getRating());
+        review.setSentiment(sentimentOf(req.getRating()));
         review.setContent(req.getContent().trim());
         List<String> imageUrls = cleanImages(req.getImageUrls(), 3, "评价图片最多上传3张");
         review.setImageUrls(imageUrls.isEmpty() ? null : String.join(",", imageUrls));
@@ -135,9 +136,20 @@ public class ReviewService {
                         : appointment.getRequestedStart()))
                 .rating(review.getRating())
                 .content(review.getContent())
+                .sentiment(review.getSentiment())
                 .imageUrls(splitImages(review.getImageUrls()))
                 .createdAt(review.getCreatedAt())
                 .build();
+    }
+
+    private String sentimentOf(Integer rating) {
+        if (rating >= 4) {
+            return "GOOD";
+        }
+        if (rating <= 2) {
+            return "BAD";
+        }
+        return "NEUTRAL";
     }
 
     private void validateRequest(ReviewCreateRequest req) {

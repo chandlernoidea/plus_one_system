@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import StaffSchedule from './staff/StaffSchedule.vue'
 import StaffAppointments from './staff/StaffAppointments.vue'
+import StaffSettlement from './staff/StaffSettlement.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -45,6 +46,9 @@ function handleLogout() {
         <el-tab-pane label="预约管理" name="appointments">
           <StaffAppointments />
         </el-tab-pane>
+        <el-tab-pane label="我的工资" name="settlement">
+          <StaffSettlement />
+        </el-tab-pane>
       </el-tabs>
     </main>
   </div>
@@ -84,7 +88,7 @@ function handleLogout() {
 }
 
 .home-main {
-  max-width: 1080px;
+  max-width: 1180px;
   margin: 32px auto;
   padding: 0 24px;
 }

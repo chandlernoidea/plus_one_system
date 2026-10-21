@@ -1,5 +1,7 @@
 package com.nail.demo.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -60,7 +62,7 @@ public class AppointmentLifecycleService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public Appointment complete(Long id, List<String> finishImageUrls) {
+    public Appointment complete(Long id, List<String> finishImageUrls, BigDecimal totalAmount) {
         CurrentUser currentUser = requireCurrentUser();
         requireStaffOrAdmin(currentUser);
         Appointment appointment = lockAppointment(id, currentUser);
@@ -68,8 +70,13 @@ public class AppointmentLifecycleService {
             throw new IllegalArgumentException("只有服务中的预约可以完成");
         }
 
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("订单金额不能小于0");
+        }
+
         List<String> images = cleanImages(finishImageUrls);
         appointment.setActualEnd(LocalDateTime.now());
+        appointment.setTotalAmount(totalAmount.setScale(2, RoundingMode.HALF_UP));
         appointment.setFinishImageUrls(images.isEmpty() ? null : String.join(",", images));
         appointment.setStatus(AppointmentStatus.COMPLETED);
         appointmentRepository.save(appointment);

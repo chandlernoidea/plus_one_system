@@ -154,6 +154,14 @@ onMounted(loadAppointments)
             <el-tag :type="statusInfo(row.status).type">
               {{ statusInfo(row.status).label }}
             </el-tag>
+            <el-tag
+              v-if="row.status === 'NO_SHOW' && row.noShowExempt === 1"
+              type="info"
+              size="small"
+              class="exempt-tag"
+            >
+              已豁免
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="230" fixed="right">
@@ -235,6 +243,10 @@ onMounted(loadAppointments)
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.exempt-tag {
+  margin-left: 6px;
 }
 
 .no-action {

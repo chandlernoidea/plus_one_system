@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS appointment (
     finish_image_urls     TEXT           NULL COMMENT '完成效果图地址，多个用逗号分隔',
     total_amount          DECIMAL(10, 2) DEFAULT NULL COMMENT '总金额',
     no_show_flag          TINYINT        NOT NULL DEFAULT 0 COMMENT '是否爽约：0 否，1 是',
+    no_show_exempt        TINYINT        NOT NULL DEFAULT 0 COMMENT '爽约是否豁免：0 否，1 是',
     created_at            DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at            DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
@@ -153,9 +154,121 @@ CREATE TABLE IF NOT EXISTS review (
     rating         INT           NOT NULL COMMENT '评分 1-5',
     content        VARCHAR(1000) NOT NULL COMMENT '评价内容',
     image_urls     TEXT          NULL COMMENT '评价图片地址，多个用逗号分隔',
+    sentiment      VARCHAR(20)   NOT NULL DEFAULT 'NEUTRAL' COMMENT '评价倾向：GOOD/BAD/NEUTRAL',
     created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_review_appointment (appointment_id),
     KEY idx_review_customer (customer_id),
-    KEY idx_review_staff (staff_id)
+    KEY idx_review_staff (staff_id),
+    KEY idx_review_sentiment (sentiment)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务评价';
+
+CREATE TABLE IF NOT EXISTS appointment_status_log (
+    id             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    appointment_id BIGINT       NOT NULL COMMENT '预约 ID',
+    action         VARCHAR(50)  NOT NULL COMMENT '操作类型',
+    operator_id    BIGINT       NOT NULL COMMENT '操作人用户 ID',
+    old_exempt     TINYINT      DEFAULT NULL COMMENT '变更前爽约豁免值',
+    new_exempt     TINYINT      DEFAULT NULL COMMENT '变更后爽约豁免值',
+    remark         VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_status_log_appointment (appointment_id),
+    KEY idx_status_log_action (action)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约状态操作日志';
+
+CREATE TABLE IF NOT EXISTS staff_compensation_rule (
+    id                     BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
+    staff_id               BIGINT        NOT NULL COMMENT '美甲师 ID',
+    base_salary            DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '底薪',
+    commission_rate        DECIMAL(5,4)  NOT NULL DEFAULT 0 COMMENT '固定提成比例 0-1',
+    good_review_bonus      DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '每条好评奖励',
+    bad_review_deduction   DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '每条差评扣减',
+    status                 VARCHAR(20)   NOT NULL DEFAULT 'ACTIVE' COMMENT '规则状态',
+    effective_from         DATE          DEFAULT NULL COMMENT '生效日期',
+    created_at             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_compensation_rule_staff (staff_id),
+    KEY idx_compensation_rule_status (status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '美甲师薪酬规则';
+
+CREATE TABLE IF NOT EXISTS monthly_settlement (
+    id                              BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
+    staff_id                        BIGINT        NOT NULL COMMENT '美甲师 ID',
+    settle_month                    CHAR(7)       NOT NULL COMMENT '结算月份 YYYY-MM',
+    base_salary                     DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '底薪快照',
+    completed_count                 INT           NOT NULL DEFAULT 0 COMMENT '完成单数',
+    total_revenue                   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '总营收',
+    commission_amount               DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '提成金额',
+    good_review_count               INT           NOT NULL DEFAULT 0 COMMENT '好评数',
+    good_review_bonus_amount        DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '好评奖励合计',
+    bad_review_count                INT           NOT NULL DEFAULT 0 COMMENT '差评数',
+    bad_review_deduction_amount     DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '差评扣减合计',
+    review_adjustment               DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '评价调整净额',
+    no_show_count                   INT           NOT NULL DEFAULT 0 COMMENT '爽约次数',
+    no_show_deduction               DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '爽约扣款',
+    final_payable                   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '最终工资',
+    final_payable_before_floor      DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '保底前应得工资',
+    status                          VARCHAR(20)   NOT NULL DEFAULT 'DRAFT' COMMENT '结算状态',
+    settled_at                      DATETIME      DEFAULT NULL COMMENT '确认结算时间',
+    created_at                      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at                      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_settlement_staff_month (staff_id, settle_month),
+    KEY idx_settlement_month (settle_month),
+    KEY idx_settlement_status (status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '月度结算快照';
+
+-- ============================================================
+-- 阶段 6 存量数据库兼容迁移
+-- 说明：MySQL 8 不支持 ADD COLUMN IF NOT EXISTS，这里通过
+-- information_schema 判断后用 PREPARE 动态执行，保证脚本可重复执行。
+-- ============================================================
+
+SET @appointment_no_show_exempt_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'appointment'
+      AND COLUMN_NAME = 'no_show_exempt'
+);
+SET @appointment_no_show_exempt_ddl = IF(
+    @appointment_no_show_exempt_exists = 0,
+    'ALTER TABLE appointment ADD COLUMN no_show_exempt TINYINT NOT NULL DEFAULT 0 COMMENT ''爽约是否豁免：0 否，1 是''',
+    'SELECT 1'
+);
+PREPARE appointment_no_show_exempt_stmt FROM @appointment_no_show_exempt_ddl;
+EXECUTE appointment_no_show_exempt_stmt;
+DEALLOCATE PREPARE appointment_no_show_exempt_stmt;
+
+-- Hibernate 可能把存量列调整为可空；这里统一回填并恢复非空默认值。
+UPDATE appointment
+SET no_show_exempt = 0
+WHERE no_show_exempt IS NULL;
+
+ALTER TABLE appointment
+    MODIFY COLUMN no_show_exempt TINYINT NOT NULL DEFAULT 0 COMMENT '爽约是否豁免：0 否，1 是';
+
+SET @review_sentiment_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'review'
+      AND COLUMN_NAME = 'sentiment'
+);
+SET @review_sentiment_ddl = IF(
+    @review_sentiment_exists = 0,
+    'ALTER TABLE review ADD COLUMN sentiment VARCHAR(20) NOT NULL DEFAULT ''NEUTRAL'' COMMENT ''评价倾向：GOOD/BAD/NEUTRAL''',
+    'SELECT 1'
+);
+PREPARE review_sentiment_stmt FROM @review_sentiment_ddl;
+EXECUTE review_sentiment_stmt;
+DEALLOCATE PREPARE review_sentiment_stmt;
+
+-- 阶段 5 已有评价没有 sentiment，按统一口径回填：
+-- 4-5 星 GOOD，1-2 星 BAD，3 星 NEUTRAL。
+UPDATE review
+SET sentiment = CASE
+    WHEN rating >= 4 THEN 'GOOD'
+    WHEN rating <= 2 THEN 'BAD'
+    ELSE 'NEUTRAL'
+END;

@@ -36,3 +36,12 @@ export function completeAppointment(id, data) {
 export function noShowAppointment(id) {
   return request.post(`/appointments/${id}/no-show`)
 }
+
+
+export function exemptNoShow(id) {
+  return request.post(`/appointments/${id}/no-show-exempt`)
+}
+
+export function updateAppointmentTotalAmount(id, data) {
+  return request.post(`/appointments/${id}/total-amount`, data)
+}

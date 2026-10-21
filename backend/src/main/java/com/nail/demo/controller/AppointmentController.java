@@ -7,6 +7,7 @@ import com.nail.demo.dto.AppointmentCompleteRequest;
 import com.nail.demo.dto.AppointmentCreateRequest;
 import com.nail.demo.dto.AppointmentRejectRequest;
 import com.nail.demo.dto.AppointmentResponse;
+import com.nail.demo.dto.AppointmentTotalAmountRequest;
 import com.nail.demo.service.AppointmentLifecycleService;
 import com.nail.demo.service.AppointmentService;
 import jakarta.validation.Valid;
@@ -70,12 +71,26 @@ public class AppointmentController {
             @PathVariable Long id,
             @Valid @RequestBody AppointmentCompleteRequest request) {
         return ApiResponse.success(appointmentService.toResponse(
-                appointmentLifecycleService.complete(id, request.getFinishImageUrls())));
+                appointmentLifecycleService.complete(
+                        id, request.getFinishImageUrls(), request.getTotalAmount())));
     }
 
     @PostMapping("/{id}/no-show")
     public ApiResponse<AppointmentResponse> noShow(@PathVariable Long id) {
         return ApiResponse.success(appointmentService.toResponse(
                 appointmentLifecycleService.noShow(id)));
+    }
+
+    @PostMapping("/{id}/no-show-exempt")
+    public ApiResponse<AppointmentResponse> exemptNoShow(@PathVariable Long id) {
+        return ApiResponse.success(appointmentService.exemptNoShow(id));
+    }
+
+    @PostMapping("/{id}/total-amount")
+    public ApiResponse<AppointmentResponse> updateTotalAmount(
+            @PathVariable Long id,
+            @Valid @RequestBody AppointmentTotalAmountRequest request) {
+        return ApiResponse.success(
+                appointmentService.updateTotalAmount(id, request.getTotalAmount()));
     }
 }

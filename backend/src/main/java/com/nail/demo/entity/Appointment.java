@@ -14,6 +14,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
+import org.hibernate.annotations.ColumnDefault;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -88,6 +89,10 @@ public class Appointment {
     @Column(name = "no_show_flag")
     private Integer noShowFlag = 0;
 
+    @Column(name = "no_show_exempt", nullable = false)
+    @ColumnDefault("0")
+    private Integer noShowExempt = 0;
+
     @Column(name = "created_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -107,6 +112,9 @@ public class Appointment {
         updatedAt = now;
         if (noShowFlag == null) {
             noShowFlag = 0;
+        }
+        if (noShowExempt == null) {
+            noShowExempt = 0;
         }
     }
 

@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import AdminPrepList from './admin/AdminPrepList.vue'
 import AdminReviewList from './admin/AdminReviewList.vue'
+import AdminAppointments from './admin/AdminAppointments.vue'
+import AdminCompensationRule from './admin/AdminCompensationRule.vue'
+import AdminSettlement from './admin/AdminSettlement.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -45,10 +48,14 @@ function handleLogout() {
         <el-tab-pane label="评价">
           <AdminReviewList />
         </el-tab-pane>
-        <el-tab-pane label="占位">
-          <el-card shadow="never">
-            <el-empty description="阶段 5+ 将在此展示更多管理功能" />
-          </el-card>
+        <el-tab-pane label="预约管理">
+          <AdminAppointments />
+        </el-tab-pane>
+        <el-tab-pane label="薪酬规则">
+          <AdminCompensationRule />
+        </el-tab-pane>
+        <el-tab-pane label="月度结算">
+          <AdminSettlement />
         </el-tab-pane>
       </el-tabs>
     </main>
@@ -89,7 +96,7 @@ function handleLogout() {
 }
 
 .home-main {
-  max-width: 1080px;
+  max-width: 1360px;
   margin: 32px auto;
   padding: 0 24px;
 }

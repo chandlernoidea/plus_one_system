@@ -17,4 +17,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByStaffIdOrderByCreatedAtDesc(Long staffId);
 
     List<Review> findAllByOrderByCreatedAtDesc();
+
+    List<Review> findByAppointmentIdInAndSentimentIn(
+            List<Long> appointmentIds, List<String> sentiments);
 }

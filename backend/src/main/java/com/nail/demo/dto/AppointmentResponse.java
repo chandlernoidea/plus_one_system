@@ -55,6 +55,8 @@ public class AppointmentResponse {
     private LocalDateTime approvedAt;
 
     private BigDecimal totalAmount;
+    private Integer noShowFlag;
+    private Integer noShowExempt;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

@@ -42,6 +42,9 @@ public class Review {
     @Column(name = "image_urls")
     private String imageUrls;
 
+    @Column(name = "sentiment", nullable = false, length = 20)
+    private String sentiment;
+
     @Column(name = "created_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

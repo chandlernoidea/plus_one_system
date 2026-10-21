@@ -1,5 +1,7 @@
 package com.nail.demo.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,6 +14,7 @@ import com.nail.demo.dto.AppointmentResponse;
 import com.nail.demo.entity.Appointment;
 import com.nail.demo.entity.AppointmentPrep;
 import com.nail.demo.entity.AppointmentReschedule;
+import com.nail.demo.entity.AppointmentStatusLog;
 import com.nail.demo.entity.Review;
 import com.nail.demo.entity.ServiceType;
 import com.nail.demo.entity.StaffProfile;
@@ -20,6 +23,7 @@ import com.nail.demo.entity.TimeSlot;
 import jakarta.persistence.EntityManager;
 import com.nail.demo.repository.AppointmentRepository;
 import com.nail.demo.repository.AppointmentRescheduleRepository;
+import com.nail.demo.repository.AppointmentStatusLogRepository;
 import com.nail.demo.repository.ServiceTypeRepository;
 import com.nail.demo.repository.StaffProfileRepository;
 import com.nail.demo.repository.SysUserRepository;
@@ -65,6 +69,7 @@ public class AppointmentService {
     private final PrepService prepService;
     private final RescheduleService rescheduleService;
     private final ReviewService reviewService;
+    private final AppointmentStatusLogRepository statusLogRepository;
     private final EntityManager entityManager;
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -310,6 +315,86 @@ public class AppointmentService {
                 .toList();
     }
 
+    /**
+     * 管理员撤销爽约标记。预约状态仍保持 NO_SHOW 以保留历史，
+     * 只把 no_show_exempt 置为 1，结算时不再计爽约扣款。
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public AppointmentResponse exemptNoShow(Long id) {
+        CurrentUser currentUser = requireCurrentUser();
+        if (!ROLE_ADMIN.equals(currentUser.getRoleCode())) {
+            throw new IllegalArgumentException("只有管理员可以撤销爽约");
+        }
+
+        Appointment snapshot = appointmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("预约不存在"));
+        staffProfileRepository.findByIdForUpdate(snapshot.getStaffId())
+                .orElseThrow(() -> new IllegalArgumentException("美甲师不存在"));
+        entityManager.clear();
+        Appointment appointment = appointmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("预约不存在"));
+
+        if (!AppointmentStatus.NO_SHOW.equals(appointment.getStatus())
+                || appointment.getNoShowFlag() == null
+                || appointment.getNoShowFlag() != 1) {
+            throw new IllegalArgumentException("该预约不是爽约状态");
+        }
+        if (appointment.getNoShowExempt() != null && appointment.getNoShowExempt() == 1) {
+            return toResponse(appointment);
+        }
+
+        appointment.setNoShowExempt(1);
+        appointmentRepository.save(appointment);
+
+        AppointmentStatusLog statusLog = new AppointmentStatusLog();
+        statusLog.setAppointmentId(appointment.getId());
+        statusLog.setAction("NO_SHOW_EXEMPT");
+        statusLog.setOperatorId(currentUser.getUserId());
+        statusLog.setOldExempt(0);
+        statusLog.setNewExempt(1);
+        statusLog.setRemark("管理员撤销爽约，结算时不再计爽约扣款");
+        statusLogRepository.save(statusLog);
+        return toResponse(appointment);
+    }
+
+    /**
+     * 管理员修正已完成预约的订单金额，用于历史数据补录。
+     * 已 SETTLED 的结算快照不会因此自动变化，需要撤销结算后重新生成。
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public AppointmentResponse updateTotalAmount(Long id, BigDecimal totalAmount) {
+        CurrentUser currentUser = requireCurrentUser();
+        if (!ROLE_ADMIN.equals(currentUser.getRoleCode())) {
+            throw new IllegalArgumentException("只有管理员可以修正订单金额");
+        }
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("订单金额不能小于0");
+        }
+
+        Appointment snapshot = appointmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("预约不存在"));
+        staffProfileRepository.findByIdForUpdate(snapshot.getStaffId())
+                .orElseThrow(() -> new IllegalArgumentException("美甲师不存在"));
+        entityManager.clear();
+        Appointment appointment = appointmentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("预约不存在"));
+
+        if (!AppointmentStatus.COMPLETED.equals(appointment.getStatus())) {
+            throw new IllegalArgumentException("只有已完成的预约可以修正订单金额");
+        }
+
+        appointment.setTotalAmount(totalAmount.setScale(2, RoundingMode.HALF_UP));
+        appointmentRepository.save(appointment);
+
+        AppointmentStatusLog statusLog = new AppointmentStatusLog();
+        statusLog.setAppointmentId(appointment.getId());
+        statusLog.setAction("TOTAL_AMOUNT_UPDATE");
+        statusLog.setOperatorId(currentUser.getUserId());
+        statusLog.setRemark("管理员修正订单金额为 " + appointment.getTotalAmount());
+        statusLogRepository.save(statusLog);
+        return toResponse(appointment);
+    }
+
     @Transactional
     public void expirePending() {
         int expiredCount = appointmentRepository.expirePending(
@@ -369,6 +454,8 @@ public class AppointmentService {
                 .expireAt(appointment.getExpireAt())
                 .approvedAt(appointment.getApprovedAt())
                 .totalAmount(appointment.getTotalAmount())
+                .noShowFlag(appointment.getNoShowFlag())
+                .noShowExempt(appointment.getNoShowExempt())
                 .createdAt(appointment.getCreatedAt())
                 .prep(prepResponse)
                 .pendingReschedule(pending == null ? null : rescheduleService.toResponse(pending))

@@ -42,6 +42,16 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByStatusAndExpireAtBefore(String status, LocalDateTime time);
 
+    List<Appointment> findByStaffIdAndStatusAndActualEndBetween(
+            Long staffId, String status, LocalDateTime from, LocalDateTime to);
+
+    List<Appointment> findByStatusAndActualEndBetween(
+            String status, LocalDateTime from, LocalDateTime to);
+
+    long countByStaffIdAndNoShowFlagAndNoShowExemptAndRequestedStartBetween(
+            Long staffId, Integer noShowFlag, Integer noShowExempt,
+            LocalDateTime from, LocalDateTime to);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Appointment a where a.id = :id")
     Optional<Appointment> findByIdForUpdate(@Param("id") Long id);
