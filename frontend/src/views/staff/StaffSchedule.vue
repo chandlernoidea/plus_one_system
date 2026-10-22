@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   createSchedule,
@@ -10,6 +10,13 @@ import {
 import { useUserStore } from '../../store/user'
 
 const userStore = useUserStore()
+
+// 从档期日历点「为这一天排班」进来时的预填参数
+const props = defineProps({
+  initialDate: { type: String, default: '' },
+  requestToken: { type: Number, default: 0 }
+})
+
 const loading = ref(false)
 const saving = ref(false)
 const schedules = ref([])
@@ -184,6 +191,20 @@ async function handleDelete(row) {
 }
 
 onMounted(loadSchedules)
+
+watch(
+  () => props.requestToken,
+  () => {
+    if (!props.requestToken) {
+      return
+    }
+    openCreateDialog()
+    if (props.initialDate) {
+      form.workDate = props.initialDate
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

@@ -2,113 +2,159 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
+import AppShell from '../components/AppShell.vue'
+import AppLede from '../components/AppLede.vue'
+import ScheduleCalendar from '../components/calendar/ScheduleCalendar.vue'
 import CustomerSlotView from './customer/CustomerSlotView.vue'
 import CustomerAppointments from './customer/CustomerAppointments.vue'
+import { useCalendarData } from '../composables/useCalendarData'
+import { useCalendarView } from '../composables/useCalendarView'
+import { dateKeyOf } from '../utils/date'
 
 const router = useRouter()
 const userStore = useUserStore()
-const activeTab = ref('booking')
-const appointmentsRef = ref(null)
+const calendar = useCalendarData()
+const calView = useCalendarView()
 
-const displayName = computed(
-  () => userStore.userInfo?.realName || userStore.userInfo?.username || ''
+const activeView = ref('calendar')
+const appointmentsRef = ref(null)
+const bookingDate = ref('')
+const bookingStaffId = ref(null)
+
+const nav = [
+  { key: 'calendar', label: '档期' },
+  { key: 'booking', label: '预约美甲' },
+  { key: 'appointments', label: '我的预约' }
+]
+
+const today = computed(() => calendar.summaryForDay(calendar.todayKey))
+
+const todayRows = computed(() =>
+  calendar.staffRowsForDay(calendar.todayKey).filter((row) => row.onDuty)
 )
-const roleName = computed(() => {
-  const roleNames = {
-    ADMIN: '管理员',
-    STAFF: '美甲师',
-    CUSTOMER: '顾客'
+
+const todayOpen = computed(() => {
+  if (todayRows.value.length === 0) {
+    return 0
   }
-  return roleNames[userStore.roleCode] || userStore.roleCode
+  const loaded = todayRows.value.every((row) => row.available !== null)
+  if (!loaded) {
+    return null
+  }
+  return todayRows.value.reduce((sum, row) => sum + (row.windows || 0), 0)
 })
+
+const nextAppointment = computed(() => {
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
+  const candidates = calendar.appointments.value
+    .filter((item) => ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status))
+    .map((item) => ({
+      ...item,
+      key: dateKeyOf(item.confirmedStart || item.requestedStart),
+      time: (item.confirmedStart || item.requestedStart || '').slice(11, 16)
+    }))
+    .filter((item) => item.key && item.key >= calendar.todayKey)
+    .filter((item) => {
+      if (item.key !== calendar.todayKey) {
+        return true
+      }
+      const [hours, minutes] = item.time.split(':').map(Number)
+      return hours * 60 + minutes >= nowMinutes
+    })
+    .sort((a, b) => `${a.key} ${a.time}`.localeCompare(`${b.key} ${b.time}`))
+  return candidates[0] || null
+})
+
+const ledeTitle = computed(() => {
+  if (todayOpen.value === null) {
+    return '正在读取今天的空档'
+  }
+  if (todayRows.value.length === 0) {
+    return '今天美甲师都休息'
+  }
+  if (todayOpen.value === 0) {
+    return '今天已经约满'
+  }
+  return `今天还有 ${todayOpen.value} 个 1 小时空档`
+})
+
+const ledeNote = computed(() => {
+  const names = todayRows.value.map((row) => row.name).slice(0, 3).join('、')
+  const parts = []
+  if (names) {
+    parts.push(`${names} 在岗`)
+  }
+  if (nextAppointment.value) {
+    parts.push(
+      `下一次 ${nextAppointment.value.key.slice(5).replace('-', '.')} ${nextAppointment.value.time}`
+    )
+  } else {
+    parts.push('还没有预约，从档期里挑一天开始')
+  }
+  return parts.join(' · ')
+})
+
+const stats = computed(() => [
+  { label: '今日可约', value: todayOpen.value === null ? '—' : todayOpen.value, unit: '个 1 小时' },
+  { label: '在岗美甲师', value: todayRows.value.length, unit: '位' },
+  {
+    label: '我的预约',
+    value: calendar.appointments.value.filter((item) =>
+      ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status)
+    ).length,
+    unit: '单'
+  }
+])
+
+async function switchView(key) {
+  activeView.value = key
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (key === 'appointments') {
+    await nextTick()
+    appointmentsRef.value?.refresh()
+  }
+}
+
+function handleBook({ key, staffId }) {
+  bookingDate.value = key
+  bookingStaffId.value = staffId
+  switchView('booking')
+}
 
 function handleLogout() {
   userStore.logout()
   router.replace('/login')
 }
-
-async function refreshAppointments() {
-  await nextTick()
-  appointmentsRef.value?.refresh()
-}
-
-function handleAppointmentCreated() {
-  activeTab.value = 'appointments'
-  refreshAppointments()
-}
-
-function handleTabChange(name) {
-  if (name === 'appointments') {
-    refreshAppointments()
-  }
-}
 </script>
 
 <template>
-  <div class="home-page">
-    <header class="home-header">
-      <div class="brand">预约制美甲管理系统</div>
-      <div class="user-area">
-        <span class="welcome">欢迎，{{ displayName }}（{{ roleName }}）</span>
-        <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
-      </div>
-    </header>
+  <AppShell
+    :nav="nav"
+    :active="activeView"
+    role-label="顾客"
+    @update:active="switchView"
+    @logout="handleLogout"
+  >
+    <template v-if="activeView === 'calendar'">
+      <AppLede eyebrow="CUSTOMER · BOOKING" :title="ledeTitle" :note="ledeNote" :stats="stats" />
 
-    <main class="home-main">
-      <el-tabs v-model="activeTab" class="home-tabs" @tab-change="handleTabChange">
-        <el-tab-pane label="预约美甲" name="booking">
-          <CustomerSlotView @appointment-created="handleAppointmentCreated" />
-        </el-tab-pane>
-        <el-tab-pane label="我的预约" name="appointments">
-          <CustomerAppointments ref="appointmentsRef" />
-        </el-tab-pane>
-      </el-tabs>
-    </main>
-  </div>
+      <ScheduleCalendar
+        :data="calendar"
+        :view="calView"
+        role="CUSTOMER"
+        @book="handleBook"
+        @go-appointments="switchView('appointments')"
+      />
+    </template>
+
+    <div v-else class="module">
+      <CustomerSlotView
+        v-if="activeView === 'booking'"
+        :initial-date="bookingDate"
+        :initial-staff-id="bookingStaffId"
+        @appointment-created="switchView('appointments')"
+      />
+      <CustomerAppointments v-else-if="activeView === 'appointments'" ref="appointmentsRef" />
+    </div>
+  </AppShell>
 </template>
-
-<style scoped>
-.home-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-}
-
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 32px;
-  background: #ffffff;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.brand {
-  color: #303133;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.user-area {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.welcome {
-  color: #606266;
-  font-size: 14px;
-}
-
-.home-main {
-  max-width: 1080px;
-  margin: 32px auto;
-  padding: 0 24px;
-}
-
-.home-tabs {
-  padding: 16px 20px 20px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-</style>

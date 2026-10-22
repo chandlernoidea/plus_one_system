@@ -8,6 +8,12 @@ import { createAppointment } from '../../api/appointment'
 
 const emit = defineEmits(['appointment-created'])
 
+// 从档期日历点「预约」进来时带上的日期与美甲师
+const props = defineProps({
+  initialDate: { type: String, default: '' },
+  initialStaffId: { type: Number, default: null }
+})
+
 const staffs = ref([])
 const selectedStaffId = ref(null)
 const selectedDate = ref(formatDate(new Date()))
@@ -170,8 +176,35 @@ async function submitAppointment() {
   }
 }
 
+watch(
+  () => props.initialDate,
+  (value) => {
+    if (value) {
+      selectedDate.value = value
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.initialStaffId,
+  (value) => {
+    if (value) {
+      selectedStaffId.value = value
+    }
+  },
+  { immediate: true }
+)
+
 watch([selectedStaffId, selectedDate], loadSlots)
-onMounted(loadStaffs)
+
+onMounted(async () => {
+  await loadStaffs()
+  // 从档期日历带日期进来时，选中值在 setup 阶段就被写入，
+  // 上面的 watch 不会触发首次加载，这里补一次。
+  await loadSlots()
+  loadServiceTypes()
+})
 </script>
 
 <template>

@@ -2,25 +2,103 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
+import AppShell from '../components/AppShell.vue'
+import AppLede from '../components/AppLede.vue'
+import ScheduleCalendar from '../components/calendar/ScheduleCalendar.vue'
 import StaffSchedule from './staff/StaffSchedule.vue'
 import StaffAppointments from './staff/StaffAppointments.vue'
 import StaffSettlement from './staff/StaffSettlement.vue'
+import { useCalendarData } from '../composables/useCalendarData'
+import { useCalendarView } from '../composables/useCalendarView'
+import { dateKeyOf, endOfWeek, startOfWeek, toKey } from '../utils/date'
 
 const router = useRouter()
 const userStore = useUserStore()
-const activeTab = ref('schedule')
+const calendar = useCalendarData()
+const calView = useCalendarView()
 
-const displayName = computed(
-  () => userStore.userInfo?.realName || userStore.userInfo?.username || ''
-)
-const roleName = computed(() => {
-  const roleNames = {
-    ADMIN: '管理员',
-    STAFF: '美甲师',
-    CUSTOMER: '顾客'
+const activeView = ref('calendar')
+const scheduleDate = ref('')
+const scheduleToken = ref(0)
+
+const nav = [
+  { key: 'calendar', label: '档期' },
+  { key: 'schedule', label: '我的排班' },
+  { key: 'appointments', label: '预约管理' },
+  { key: 'settlement', label: '我的工资' }
+]
+
+const today = computed(() => calendar.summaryForDay(calendar.todayKey))
+
+const weekDutyDays = computed(() => {
+  const from = toKey(startOfWeek(new Date()))
+  const to = toKey(endOfWeek(new Date()))
+  const days = new Set()
+  for (const schedule of calendar.schedules.value) {
+    if (schedule.scheduleType === 'LEAVE') {
+      continue
+    }
+    if (schedule.workDate >= from && schedule.workDate <= to) {
+      days.add(schedule.workDate)
+    }
   }
-  return roleNames[userStore.roleCode] || userStore.roleCode
+  return days.size
 })
+
+const nextAppointment = computed(() => {
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
+  const candidates = calendar.appointments.value
+    .filter((item) => ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status))
+    .map((item) => ({
+      ...item,
+      key: dateKeyOf(item.confirmedStart || item.requestedStart),
+      time: (item.confirmedStart || item.requestedStart || '').slice(11, 16)
+    }))
+    .filter((item) => item.key && item.key >= calendar.todayKey)
+    .filter((item) => {
+      if (item.key !== calendar.todayKey) {
+        return true
+      }
+      const [hours, minutes] = item.time.split(':').map(Number)
+      return hours * 60 + minutes >= nowMinutes
+    })
+    .sort((a, b) => `${a.key} ${a.time}`.localeCompare(`${b.key} ${b.time}`))
+  return candidates[0] || null
+})
+
+const ledeTitle = computed(() =>
+  today.value.count ? `今天有 ${today.value.count} 个预约` : '今天没有预约，可以留给自己'
+)
+
+const ledeNote = computed(() => {
+  const parts = [`本周在岗 ${weekDutyDays.value} 天`]
+  if (nextAppointment.value) {
+    parts.push(
+      `下一单 ${nextAppointment.value.key.slice(5).replace('-', '.')} ${nextAppointment.value.time}`
+    )
+  }
+  if (today.value.pending) {
+    parts.push(`${today.value.pending} 单待确认`)
+  }
+  return parts.join(' · ')
+})
+
+const stats = computed(() => [
+  { label: '今日预约', value: today.value.count, unit: '单' },
+  { label: '本周在岗', value: weekDutyDays.value, unit: '天' },
+  { label: '待确认', value: today.value.pending, unit: '单' }
+])
+
+function switchView(key) {
+  activeView.value = key
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function handleCreateSchedule(key) {
+  scheduleDate.value = key
+  scheduleToken.value += 1
+  switchView('schedule')
+}
 
 function handleLogout() {
   userStore.logout()
@@ -29,73 +107,34 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="home-page">
-    <header class="home-header">
-      <div class="brand">预约制美甲管理系统</div>
-      <div class="user-area">
-        <span class="welcome">欢迎，{{ displayName }}（{{ roleName }}）</span>
-        <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
-      </div>
-    </header>
+  <AppShell
+    :nav="nav"
+    :active="activeView"
+    role-label="美甲师"
+    @update:active="switchView"
+    @logout="handleLogout"
+  >
+    <template v-if="activeView === 'calendar'">
+      <AppLede eyebrow="STAFF · MY SCHEDULE" :title="ledeTitle" :note="ledeNote" :stats="stats" />
 
-    <main class="home-main">
-      <el-tabs v-model="activeTab" class="home-tabs">
-        <el-tab-pane label="我的排班" name="schedule">
-          <StaffSchedule />
-        </el-tab-pane>
-        <el-tab-pane label="预约管理" name="appointments">
-          <StaffAppointments />
-        </el-tab-pane>
-        <el-tab-pane label="我的工资" name="settlement">
-          <StaffSettlement />
-        </el-tab-pane>
-      </el-tabs>
-    </main>
-  </div>
+      <ScheduleCalendar
+        :data="calendar"
+        :view="calView"
+        role="STAFF"
+        @go-appointments="switchView('appointments')"
+        @open-appointment="switchView('appointments')"
+        @create-schedule="handleCreateSchedule"
+      />
+    </template>
+
+    <div v-else class="module">
+      <StaffSchedule
+        v-if="activeView === 'schedule'"
+        :initial-date="scheduleDate"
+        :request-token="scheduleToken"
+      />
+      <StaffAppointments v-else-if="activeView === 'appointments'" />
+      <StaffSettlement v-else-if="activeView === 'settlement'" />
+    </div>
+  </AppShell>
 </template>
-
-<style scoped>
-.home-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-}
-
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 32px;
-  background: #ffffff;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.brand {
-  color: #303133;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.user-area {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.welcome {
-  color: #606266;
-  font-size: 14px;
-}
-
-.home-main {
-  max-width: 1180px;
-  margin: 32px auto;
-  padding: 0 24px;
-}
-
-.home-tabs {
-  padding: 16px 20px 20px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-</style>

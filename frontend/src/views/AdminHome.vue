@@ -1,7 +1,13 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
+import AppShell from '../components/AppShell.vue'
+import AppLede from '../components/AppLede.vue'
+import ScheduleCalendar from '../components/calendar/ScheduleCalendar.vue'
+import { useCalendarData } from '../composables/useCalendarData'
+import { useCalendarView } from '../composables/useCalendarView'
+import { formatMoney } from '../utils/date'
 import AdminPrepList from './admin/AdminPrepList.vue'
 import AdminReviewList from './admin/AdminReviewList.vue'
 import AdminAppointments from './admin/AdminAppointments.vue'
@@ -10,18 +16,49 @@ import AdminSettlement from './admin/AdminSettlement.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+const calendar = useCalendarData()
+const calView = useCalendarView()
 
-const displayName = computed(
-  () => userStore.userInfo?.realName || userStore.userInfo?.username || ''
+const activeView = ref('calendar')
+
+const nav = [
+  { key: 'calendar', label: '档期' },
+  { key: 'prep', label: '今日物料' },
+  { key: 'review', label: '评价' },
+  { key: 'appointments', label: '预约管理' },
+  { key: 'rule', label: '薪酬规则' },
+  { key: 'settlement', label: '月度结算' }
+]
+
+const today = computed(() => calendar.summaryForDay(calendar.todayKey))
+
+const ledeTitle = computed(() =>
+  today.value.count ? `今天有 ${today.value.count} 个预约` : '今天还没有预约'
 )
-const roleName = computed(() => {
-  const roleNames = {
-    ADMIN: '管理员',
-    STAFF: '美甲师',
-    CUSTOMER: '顾客'
+
+const ledeNote = computed(() => {
+  const parts = [`${today.value.onDuty} 位美甲师在岗`]
+  const first = today.value.appointments[0]
+  if (first) {
+    parts.push(`最早 ${first.startText} 开始`)
   }
-  return roleNames[userStore.roleCode] || userStore.roleCode
+  if (today.value.pending) {
+    parts.push(`${today.value.pending} 单待确认`)
+  }
+  return parts.join(' · ')
 })
+
+const stats = computed(() => [
+  { label: '今日预约', value: today.value.count, unit: '单' },
+  { label: '今日营收', value: formatMoney(today.value.revenue), unit: '元' },
+  { label: '待确认', value: today.value.pending, unit: '单' },
+  { label: '在岗', value: today.value.onDuty, unit: '位' }
+])
+
+function switchView(key) {
+  activeView.value = key
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 function handleLogout() {
   userStore.logout()
@@ -30,86 +67,31 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="home-page">
-    <header class="home-header">
-      <div class="brand">预约制美甲管理系统</div>
-      <div class="user-area">
-        <span class="welcome">欢迎，{{ displayName }}（{{ roleName }}）</span>
-        <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
-      </div>
-    </header>
+  <AppShell
+    :nav="nav"
+    :active="activeView"
+    role-label="管理员"
+    @update:active="switchView"
+    @logout="handleLogout"
+  >
+    <template v-if="activeView === 'calendar'">
+      <AppLede eyebrow="ADMIN · SCHEDULE" :title="ledeTitle" :note="ledeNote" :stats="stats" />
 
-    <main class="home-main">
-      <h1 class="page-title">管理员首页</h1>
-      <el-tabs class="home-tabs">
-        <el-tab-pane label="今日物料">
-          <AdminPrepList />
-        </el-tab-pane>
-        <el-tab-pane label="评价">
-          <AdminReviewList />
-        </el-tab-pane>
-        <el-tab-pane label="预约管理">
-          <AdminAppointments />
-        </el-tab-pane>
-        <el-tab-pane label="薪酬规则">
-          <AdminCompensationRule />
-        </el-tab-pane>
-        <el-tab-pane label="月度结算">
-          <AdminSettlement />
-        </el-tab-pane>
-      </el-tabs>
-    </main>
-  </div>
+      <ScheduleCalendar
+        :data="calendar"
+        :view="calView"
+        role="ADMIN"
+        @go-appointments="switchView('appointments')"
+        @open-appointment="switchView('appointments')"
+      />
+    </template>
+
+    <div v-else class="module">
+      <AdminPrepList v-if="activeView === 'prep'" />
+      <AdminReviewList v-else-if="activeView === 'review'" />
+      <AdminAppointments v-else-if="activeView === 'appointments'" />
+      <AdminCompensationRule v-else-if="activeView === 'rule'" />
+      <AdminSettlement v-else-if="activeView === 'settlement'" />
+    </div>
+  </AppShell>
 </template>
-
-<style scoped>
-.home-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-}
-
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 32px;
-  background: #ffffff;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.brand {
-  color: #303133;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.user-area {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.welcome {
-  color: #606266;
-  font-size: 14px;
-}
-
-.home-main {
-  max-width: 1360px;
-  margin: 32px auto;
-  padding: 0 24px;
-}
-
-.page-title {
-  margin: 0 0 20px;
-  color: #303133;
-  font-size: 24px;
-}
-
-.home-tabs {
-  padding: 16px 20px 20px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-</style>

@@ -1,0 +1,322 @@
+/* ==========================================================================
+   Element Plus 主题改写
+   目标不是逐页改组件，而是让既有业务组件落在编辑式体系里：
+   去掉阴影与圆角、用发丝线分隔、把主色让给墨黑，朱砂只做强调。
+   ========================================================================== */
+
+:root {
+  --el-color-primary: #17130f;
+  --el-color-primary-light-3: #4a4138;
+  --el-color-primary-light-5: #6d6359;
+  --el-color-primary-light-7: #a2988c;
+  --el-color-primary-light-8: #c9c0b5;
+  --el-color-primary-light-9: #e6dfd3;
+  --el-color-primary-dark-2: #000000;
+
+  --el-color-success: #3e5944;
+  --el-color-success-light-3: #6b836f;
+  --el-color-success-light-5: #93a795;
+  --el-color-success-light-8: #c9d3c9;
+  --el-color-success-light-9: #e4eae3;
+  --el-color-success-dark-2: #2d4232;
+
+  --el-color-warning: #8a6526;
+  --el-color-warning-light-3: #ab8a58;
+  --el-color-warning-light-5: #c4ac85;
+  --el-color-warning-light-8: #e4d8c3;
+  --el-color-warning-light-9: #f1eade;
+  --el-color-warning-dark-2: #6d4f1c;
+
+  --el-color-danger: #a33a2b;
+  --el-color-error: #a33a2b;
+  --el-color-danger-light-3: #c06e61;
+  --el-color-danger-light-5: #d19c92;
+  --el-color-danger-light-8: #eaccc7;
+  --el-color-danger-light-9: #f5e6e3;
+  --el-color-danger-dark-2: #832b1f;
+  --el-color-error-light-9: #f5e6e3;
+
+  --el-color-info: #7b7064;
+  --el-color-info-light-3: #a2988c;
+  --el-color-info-light-5: #bcb3a7;
+  --el-color-info-light-8: #ded8cf;
+  --el-color-info-light-9: #efece5;
+  --el-color-info-dark-2: #5f564c;
+
+  --el-bg-color: #faf6ed;
+  --el-bg-color-page: #f3eee4;
+  --el-bg-color-overlay: #faf6ed;
+
+  --el-text-color-primary: #17130f;
+  --el-text-color-regular: #3d352d;
+  --el-text-color-secondary: #7b7064;
+  --el-text-color-placeholder: #a5998a;
+  --el-text-color-disabled: #bdb3a6;
+
+  --el-border-color: rgba(23, 19, 15, 0.16);
+  --el-border-color-light: rgba(23, 19, 15, 0.12);
+  --el-border-color-lighter: rgba(23, 19, 15, 0.08);
+  --el-border-color-extra-light: rgba(23, 19, 15, 0.05);
+  --el-border-color-dark: rgba(23, 19, 15, 0.24);
+  --el-border-color-darker: rgba(23, 19, 15, 0.34);
+
+  --el-fill-color: rgba(23, 19, 15, 0.04);
+  --el-fill-color-light: rgba(23, 19, 15, 0.03);
+  --el-fill-color-lighter: rgba(23, 19, 15, 0.02);
+  --el-fill-color-blank: #faf6ed;
+
+  --el-font-family: var(--font-ui);
+  --el-font-size-base: 14px;
+  --el-border-radius-base: 2px;
+  --el-border-radius-small: 2px;
+  --el-box-shadow: 0 18px 48px rgba(23, 19, 15, 0.12);
+  --el-box-shadow-light: 0 8px 24px rgba(23, 19, 15, 0.08);
+  --el-box-shadow-lighter: 0 2px 8px rgba(23, 19, 15, 0.05);
+}
+
+/* ---- 按钮：方形、无阴影、主按钮为墨黑 ---- */
+
+.el-button {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  transition: background-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+
+.el-button--primary {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.el-button--primary:hover,
+.el-button--primary:focus {
+  border-color: var(--ink-2);
+  background: var(--ink-2);
+}
+
+.el-button.is-text,
+.el-button.is-link {
+  padding: 0 6px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.el-button.is-text:hover {
+  background: var(--el-fill-color);
+}
+
+.el-button + .el-button {
+  margin-left: var(--s2);
+}
+
+/* ---- 表单控件：细边框、纸面底、聚焦时用朱砂描边 ---- */
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  border-radius: var(--radius);
+  background-color: var(--el-fill-color-blank);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+  transition: box-shadow var(--dur-1) var(--ease);
+}
+
+.el-input__wrapper:hover,
+.el-textarea__inner:hover,
+.el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--line-strong) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--lacquer) inset;
+}
+
+.el-form-item__label {
+  color: var(--ink-3);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* ---- 标签页：编辑式目录 ---- */
+
+.el-tabs__header {
+  margin-bottom: var(--s5);
+}
+
+.el-tabs__nav-wrap::after {
+  height: 1px;
+  background: var(--line);
+}
+
+.el-tabs__item {
+  height: 40px;
+  padding: 0 var(--s4) !important;
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.el-tabs__item:hover {
+  color: var(--ink);
+}
+
+.el-tabs__item.is-active {
+  color: var(--ink);
+}
+
+.el-tabs__active-bar {
+  height: 1.5px;
+  background: var(--lacquer);
+}
+
+/* ---- 表格：只有横向发丝线，表头做成小字标签 ---- */
+
+.el-table {
+  --el-table-border-color: var(--line);
+  --el-table-header-bg-color: transparent;
+  --el-table-row-hover-bg-color: rgba(23, 19, 15, 0.025);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  background: transparent;
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.el-table td.el-table__cell {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.el-table__inner-wrapper::before {
+  display: none;
+}
+
+.el-table .cell {
+  padding: 0 var(--s3);
+}
+
+/* ---- 对话框 / 抽屉：纸面、直角、单层阴影 ---- */
+
+.el-dialog {
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--el-box-shadow);
+}
+
+.el-dialog__header {
+  padding: var(--s5) var(--s5) var(--s3);
+  margin-right: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.el-dialog__title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.el-dialog__body {
+  padding: var(--s5);
+}
+
+.el-dialog__footer {
+  padding: var(--s3) var(--s5) var(--s5);
+}
+
+.el-drawer {
+  background: var(--paper-raised);
+}
+
+.el-drawer__header {
+  margin-bottom: var(--s4);
+  padding: var(--s5) var(--s5) var(--s3);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+/* ---- 标签：细边框小字，不做药丸 ---- */
+
+.el-tag {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 2px;
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/* ---- 卡片：去掉默认投影，交给版面分隔 ---- */
+
+.el-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  box-shadow: none;
+}
+
+.el-card__header {
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---- 消息与确认框 ---- */
+
+.el-message {
+  border-radius: var(--radius);
+  border-color: var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--el-box-shadow-light);
+  font-family: var(--font-ui);
+}
+
+.el-message-box {
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--el-box-shadow);
+}
+
+.el-message-box__title {
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+
+/* ---- 日期选择器 ---- */
+
+.el-picker__popper.el-popper,
+.el-select__popper.el-popper {
+  border-radius: var(--radius);
+  border-color: var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--el-box-shadow-light);
+}
+
+/* ---- 描述列表（预约详情在用）---- */
+
+.el-descriptions__label {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* ---- 空状态 ---- */
+
+.el-empty__description p {
+  color: var(--ink-3);
+  font-size: 13px;
+}

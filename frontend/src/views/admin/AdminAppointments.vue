@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   exemptNoShow,
@@ -10,11 +10,19 @@ import {
 const appointments = ref([])
 const loading = ref(false)
 const statusFilter = ref('ALL')
+const rangeFilter = ref('month')
 const actionId = ref(null)
 const amountDialogVisible = ref(false)
 const amountTarget = ref(null)
 const amountValue = ref(0)
 const savingAmount = ref(false)
+
+const rangeOptions = [
+  { label: '本月', value: 'month' },
+  { label: '今天', value: 'today' },
+  { label: '未来 7 天', value: 'week' },
+  { label: '全部', value: 'all' }
+]
 
 const statusOptions = [
   { label: '全部', value: 'ALL' },
@@ -36,6 +44,37 @@ const statusConfig = {
   COMPLETED: { label: '已完成', type: 'info' },
   NO_SHOW: { label: '爽约', type: 'danger' }
 }
+
+function shiftKey(date, days) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+}
+
+/** 日期范围在前端收窄：默认只看本月，避免历史数据把当天要处理的行淹掉 */
+const visibleAppointments = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayKey = shiftKey(today, 0)
+  const weekEnd = shiftKey(today, 7)
+
+  return appointments.value.filter((row) => {
+    const key = (row.requestedStart || '').slice(0, 10)
+    if (!key) {
+      return true
+    }
+    if (rangeFilter.value === 'today') {
+      return key === todayKey
+    }
+    if (rangeFilter.value === 'week') {
+      return key >= todayKey && key <= weekEnd
+    }
+    if (rangeFilter.value === 'month') {
+      return key.slice(0, 7) === todayKey.slice(0, 7)
+    }
+    return true
+  })
+})
 
 function statusInfo(status) {
   return statusConfig[status] || { label: status || '未知', type: 'info' }
@@ -120,6 +159,15 @@ onMounted(loadAppointments)
         <p>管理员可撤销爽约，或修正已完成预约的订单金额</p>
       </div>
       <div class="header-actions">
+        <span class="list-count mono">{{ visibleAppointments.length }} 条</span>
+        <el-select v-model="rangeFilter" style="width: 130px">
+          <el-option
+            v-for="option in rangeOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
         <el-select v-model="statusFilter" style="width: 140px" @change="loadAppointments">
           <el-option
             v-for="option in statusOptions"
@@ -133,7 +181,7 @@ onMounted(loadAppointments)
     </div>
 
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="appointments" stripe>
+      <el-table v-loading="loading" :data="visibleAppointments" stripe>
         <el-table-column prop="customerName" label="顾客" width="110" />
         <el-table-column prop="staffName" label="美甲师" width="120" />
         <el-table-column prop="serviceTypeName" label="项目" min-width="120" />
@@ -185,7 +233,7 @@ onMounted(loadAppointments)
           </template>
         </el-table-column>
       </el-table>
-      <el-empty v-if="!loading && appointments.length === 0" description="暂无预约" />
+      <el-empty v-if="!loading && visibleAppointments.length === 0" description="这个范围内没有预约" />
     </el-card>
 
     <el-dialog v-model="amountDialogVisible" title="修正订单金额" width="420px">
@@ -236,7 +284,14 @@ onMounted(loadAppointments)
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.list-count {
+  color: var(--ink-4);
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
 .exempt-tag {

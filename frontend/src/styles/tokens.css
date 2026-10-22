@@ -1,0 +1,65 @@
+/* ==========================================================================
+   设计基线 · 编辑式（Editorial）
+   纸感底色 + 墨黑 + 朱砂红；宋体承担标题与数字，黑体承担界面文本。
+   只保留一套尺度，所有组件从这里取值，避免颜色和间距在迭代中漂移。
+   ========================================================================== */
+
+:root {
+  /* ---- 纸与墨 ---- */
+  --paper: #f3eee4;
+  --paper-raised: #faf6ed;
+  --paper-sunken: #eae2d4;
+  --ink: #17130f;
+  --ink-2: #3d352d;
+  --ink-3: #7b7064;
+  --ink-4: #a5998a;
+  --line: rgba(23, 19, 15, 0.13);
+  --line-soft: rgba(23, 19, 15, 0.07);
+  --line-strong: rgba(23, 19, 15, 0.3);
+
+  /* ---- 强调色（克制使用）---- */
+  --lacquer: #ab3a2b;
+  --lacquer-deep: #892a1e;
+  --lacquer-wash: rgba(171, 58, 43, 0.08);
+  --moss: #3e5944;
+  --ochre: #8a6526;
+  --slate: #46545f;
+
+  /* ---- 状态 ---- */
+  --st-pending: var(--ochre);
+  --st-confirmed: var(--moss);
+  --st-inservice: var(--lacquer);
+  --st-completed: var(--ink-3);
+  --st-noshow: var(--lacquer-deep);
+  --st-cancelled: var(--ink-4);
+
+  /* ---- 字体 ---- */
+  --font-display: "Noto Serif CJK SC", "Songti SC", "Source Han Serif SC", "STSong", "SimSun", Georgia, serif;
+  --font-ui: "Noto Sans CJK SC", "PingFang SC", "Source Han Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Maple Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- 间距节奏（4 的倍数，24 / 48 为主调节点）---- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+
+  /* ---- 形状：近乎无圆角 ---- */
+  --radius: 2px;
+  --radius-lg: 3px;
+
+  /* ---- 动效 ---- */
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 420ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* ---- 版心 ---- */
+  --shell-max: 1480px;
+  --gutter: 24px;
+}
