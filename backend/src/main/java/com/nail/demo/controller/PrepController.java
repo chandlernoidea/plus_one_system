@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,18 @@ public class PrepController {
     public ApiResponse<PrepResponse> update(@PathVariable Long appointmentId,
                                             @Valid @RequestBody PrepUpdateRequest request) {
         return ApiResponse.success(prepService.update(appointmentId, request));
+    }
+
+    /** 管理员确认物料已备好 */
+    @PostMapping("/{appointmentId}/confirm")
+    public ApiResponse<PrepResponse> confirm(@PathVariable Long appointmentId) {
+        return ApiResponse.success(prepService.setReady(appointmentId, true));
+    }
+
+    /** 管理员撤回「已备好」 */
+    @PostMapping("/{appointmentId}/unconfirm")
+    public ApiResponse<PrepResponse> unconfirm(@PathVariable Long appointmentId) {
+        return ApiResponse.success(prepService.setReady(appointmentId, false));
     }
 
     @GetMapping("/{appointmentId}/customer-view")

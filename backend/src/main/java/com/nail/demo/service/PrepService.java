@@ -101,6 +101,28 @@ public class PrepService {
         return toResponse(prep);
     }
 
+    /**
+     * 管理员确认物料已备好，或撤回确认。
+     * 与美甲师保存不同：这里不按字段完整度重算状态，直接落 READY / PENDING。
+     *
+     * @param appointmentId 预约 ID
+     * @param ready true 确认已备好，false 撤回
+     * @return 更新后的工单
+     */
+    @Transactional
+    public PrepResponse setReady(Long appointmentId, boolean ready) {
+        CurrentUser currentUser = requireCurrentUser();
+        if (!ROLE_ADMIN.equals(currentUser.getRoleCode())) {
+            throw new IllegalArgumentException("无权操作");
+        }
+        requireAppointment(appointmentId);
+        AppointmentPrep prep = appointmentPrepRepository.findByAppointmentId(appointmentId)
+                .orElseThrow(() -> new IllegalArgumentException("工单不存在"));
+        prep.setPrepStatus(ready ? PrepStatus.READY : PrepStatus.PENDING);
+        appointmentPrepRepository.save(prep);
+        return toResponse(prep);
+    }
+
     @Transactional(readOnly = true)
     public PrepCustomerView getCustomerView(Long appointmentId) {
         Appointment appointment = requireAppointment(appointmentId);

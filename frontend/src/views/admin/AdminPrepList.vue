@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { listUpcomingPreps } from '../../api/prep'
+import { ElMessage } from 'element-plus'
+import { confirmPrep, listUpcomingPreps, unconfirmPrep } from '../../api/prep'
 import DateBlockBar from '../../components/DateBlockBar.vue'
 import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
 
@@ -11,6 +12,7 @@ const loading = ref(false)
 const blockKey = ref(null)
 const explicitAll = ref(false)
 const initialised = ref(false)
+const actionId = ref(null)
 
 const statusConfig = {
   PENDING: { label: '待准备', type: 'warning' },
@@ -65,6 +67,32 @@ function updatedText(value) {
     return '—'
   }
   return String(value).slice(5, 16)
+}
+
+async function handleConfirm(row) {
+  actionId.value = row.appointmentId
+  try {
+    await confirmPrep(row.appointmentId)
+    ElMessage.success('已确认物料备好')
+    await loadPreps()
+  } catch (error) {
+    // 错误提示由 request.js 统一处理
+  } finally {
+    actionId.value = null
+  }
+}
+
+async function handleUnconfirm(row) {
+  actionId.value = row.appointmentId
+  try {
+    await unconfirmPrep(row.appointmentId)
+    ElMessage.success('已撤回确认')
+    await loadPreps()
+  } catch (error) {
+    // 错误提示由 request.js 统一处理
+  } finally {
+    actionId.value = null
+  }
 }
 
 function onPick(key) {
@@ -142,7 +170,7 @@ onMounted(loadPreps)
           min-width="150"
           show-overflow-tooltip
         />
-        <el-table-column label="物料" min-width="170" show-overflow-tooltip>
+        <el-table-column label="物料" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">
             <span :class="{ 'empty-text': !row.materialJson }">
               {{ materialSummary(row.materialJson) }}
@@ -171,6 +199,27 @@ onMounted(loadPreps)
             <el-tag :type="statusInfo(row.prepStatus).type">
               {{ statusInfo(row.prepStatus).label }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="112" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.prepStatus !== 'READY'"
+              link
+              type="primary"
+              :loading="actionId === row.appointmentId"
+              @click="handleConfirm(row)"
+            >
+              确认已备好
+            </el-button>
+            <el-button
+              v-else
+              link
+              :loading="actionId === row.appointmentId"
+              @click="handleUnconfirm(row)"
+            >
+              撤回
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
