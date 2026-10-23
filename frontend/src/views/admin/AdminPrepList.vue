@@ -1,18 +1,26 @@
 <script setup>
+/**
+ * 管理员 · 物料准备。
+ *
+ * 数据来自「今天起 30 天」内已确认 / 服务中 / 改约中的预约工单，
+ * 用「每 3 天一段」的日期段切分，默认只看今天所在段，避免一屏几十行。
+ *
+ * 两种操作的区别：
+ * - 编辑：改款式 / 效果图 / 物料 JSON / 备注，保存后由后端按字段完整度
+ *   重算状态（三项齐全才是「已就绪」）；
+ * - 确认已备好：管理员直接置为 READY，不要求字段齐全，可撤回。
+ */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { confirmPrep, listUpcomingPreps, unconfirmPrep, updatePrep } from '../../api/prep'
 import ImageUploader from '../../components/ImageUploader.vue'
 import DateBlockBar from '../../components/DateBlockBar.vue'
-import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
+import { useDateBlockSelection } from '../../composables/useDateBlockSelection'
 
 const PREP_DAYS = 30
 
 const preps = ref([])
 const loading = ref(false)
-const blockKey = ref(null)
-const explicitAll = ref(false)
-const initialised = ref(false)
 const actionId = ref(null)
 
 const editVisible = ref(false)
@@ -30,13 +38,16 @@ const statusConfig = {
   READY: { label: '已就绪', type: 'success' }
 }
 
+// 工单按预约时间归属到「每 3 天一段」，默认只看今天所在段
 const dayOf = (row) => String(row.appointmentTime || '').slice(0, 10)
-
-const blocks = computed(() => buildDateBlocks(preps.value, dayOf))
-const activeBlock = computed(
-  () => blocks.value.find((block) => block.key === blockKey.value) || null
-)
-const visiblePreps = computed(() => filterByBlock(preps.value, activeBlock.value, dayOf))
+const {
+  blockKey,
+  blocks,
+  activeBlock,
+  visible: visiblePreps,
+  pick,
+  applyDefault
+} = useDateBlockSelection(preps, dayOf)
 
 const readyCount = computed(
   () => visiblePreps.value.filter((item) => item.prepStatus === 'READY').length
@@ -150,29 +161,12 @@ async function handleUnconfirm(row) {
   }
 }
 
-function onPick(key) {
-  blockKey.value = key
-  explicitAll.value = key === null
-}
-
-function applyDefaultBlock() {
-  if (explicitAll.value) {
-    return
-  }
-  const exists = blocks.value.some((block) => block.key === blockKey.value)
-  if (!initialised.value || !exists) {
-    const fallback = blocks.value.find((block) => block.isCurrent) || blocks.value[0]
-    blockKey.value = fallback ? fallback.key : null
-    initialised.value = true
-  }
-}
-
 async function loadPreps() {
   loading.value = true
   try {
     const response = await listUpcomingPreps(PREP_DAYS)
     preps.value = response.data.data || []
-    applyDefaultBlock()
+    applyDefault()
   } catch (error) {
     preps.value = []
   } finally {
@@ -200,7 +194,7 @@ onMounted(loadPreps)
       :blocks="blocks"
       :model-value="blockKey"
       :total="preps.length"
-      @update:model-value="onPick"
+      @update:model-value="pick"
     />
 
     <el-card shadow="never">

@@ -17,8 +17,10 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'open-appointment'])
 
-const HOUR = 58 // 每小时像素高度
-const TOP_INSET = 16 // 时间轴顶部留白，避免 09:00 被表头压住
+// 每小时 58px：12 小时约 700px，在 1000px 视口里不用滚动就能看全一天
+const HOUR = 58
+// 时间轴顶部留白，避免 09:00 的刻度被吸顶表头压住
+const TOP_INSET = 16
 
 const weekStart = computed(() => startOfWeek(props.cursor))
 const days = computed(() =>
@@ -42,7 +44,10 @@ const days = computed(() =>
   })
 )
 
-/** 时间轴范围：以排班与预约为准，最少展示 09:00–20:00 */
+/**
+ * 时间轴范围：取排班与预约的并集，再按整点向外取整；
+ * 最少展示 09:00–20:00，避免只排了半天时时间轴过短、比例失真。
+ */
 const bounds = computed(() => {
   let min = 9 * 60
   let max = 20 * 60
@@ -78,11 +83,20 @@ const nowMinutes = computed(() => {
   return now.getHours() * 60 + now.getMinutes()
 })
 
-/** 同一时段并排：按重叠簇分配列宽 */
+/**
+ * 同一时段并排：把互相重叠的预约分到不同列。
+ *
+ * 为什么先按簇分组：一天里常有「上午挤、下午空」的分布，
+ * 如果按全天最大并发数统一分列，空闲时段也会被压窄。
+ * 所以只对时间上连成一片的簇计算列数。
+ *
+ * 注意：这里复制每个条目再写入 column / columns，
+ * 不改动 summaryForDay 返回的共享数据。
+ */
 function layout(list) {
-  const sorted = [...list].sort(
-    (a, b) => a.startMinutes - b.startMinutes || b.duration - a.duration
-  )
+  const sorted = list
+    .map((item) => ({ ...item }))
+    .sort((a, b) => a.startMinutes - b.startMinutes || b.duration - a.duration)
   const clusters = []
   let current = null
   for (const item of sorted) {
@@ -111,6 +125,7 @@ function layout(list) {
   return sorted
 }
 
+/** 预约块定位：按「当天第几分钟」映射到像素，重叠时按列宽等分 */
 function blockStyle(item) {
   const top = TOP_INSET + ((item.startMinutes - bounds.value.min) / 60) * HOUR
   const height = Math.max((item.duration / 60) * HOUR - 3, 24)

@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * 日期分段导航条。
+ *
+ * 列表按每 3 天切段后可能有很多段，默认只渲染「当前段附近」的
+ * collapsedCount 段，其余收进「更多 N 段」；展开后换行铺开。
+ * 这样无论数据增长到多少个月，工具条高度都是可控的。
+ *
+ * 可滚动轨道与折叠开关是两个元素：开关在遮罩之外，始终清晰可点。
+ */
 import { computed, ref } from 'vue'
 
 const props = defineProps({

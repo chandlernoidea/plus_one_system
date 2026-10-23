@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * 全站外壳：报头（品牌 + 编号导航 + 用户）与页脚。
+ *
+ * 导航项由各端首页传入，编号（01、02…）由组件按顺序生成，
+ * 新增模块不需要手写序号；窄屏时导航横向滚动并做右缘渐隐。
+ */
 import { computed } from 'vue'
 import { useUserStore } from '../store/user'
 import { monthName } from '../utils/date'

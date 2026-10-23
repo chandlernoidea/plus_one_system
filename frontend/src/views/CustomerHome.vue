@@ -1,4 +1,11 @@
 <script setup>
+/**
+ * 顾客工作台。
+ *
+ * 第一屏回答两个问题：今天还有没有空档、哪几位美甲师能约。
+ * 月表里只显示自己的预约；点某一天，右栏列出在岗美甲师与可约的 1 小时窗口，
+ * 点「预约」直接跳到预约页并把日期、美甲师预填好。
+ */
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
@@ -9,7 +16,7 @@ import CustomerSlotView from './customer/CustomerSlotView.vue'
 import CustomerAppointments from './customer/CustomerAppointments.vue'
 import { useCalendarData } from '../composables/useCalendarData'
 import { useCalendarView } from '../composables/useCalendarView'
-import { dateKeyOf } from '../utils/date'
+import { countActiveAppointments, findNextAppointment } from '../utils/appointments'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -44,26 +51,10 @@ const todayOpen = computed(() => {
   return todayRows.value.reduce((sum, row) => sum + (row.windows || 0), 0)
 })
 
-const nextAppointment = computed(() => {
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
-  const candidates = calendar.appointments.value
-    .filter((item) => ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status))
-    .map((item) => ({
-      ...item,
-      key: dateKeyOf(item.confirmedStart || item.requestedStart),
-      time: (item.confirmedStart || item.requestedStart || '').slice(11, 16)
-    }))
-    .filter((item) => item.key && item.key >= calendar.todayKey)
-    .filter((item) => {
-      if (item.key !== calendar.todayKey) {
-        return true
-      }
-      const [hours, minutes] = item.time.split(':').map(Number)
-      return hours * 60 + minutes >= nowMinutes
-    })
-    .sort((a, b) => `${a.key} ${a.time}`.localeCompare(`${b.key} ${b.time}`))
-  return candidates[0] || null
-})
+// 下一单：只算自己的在途预约
+const nextAppointment = computed(() =>
+  findNextAppointment(calendar.appointments.value, calendar.todayKey)
+)
 
 const ledeTitle = computed(() => {
   if (todayOpen.value === null) {
@@ -99,9 +90,7 @@ const stats = computed(() => [
   { label: '在岗美甲师', value: todayRows.value.length, unit: '位' },
   {
     label: '我的预约',
-    value: calendar.appointments.value.filter((item) =>
-      ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status)
-    ).length,
+    value: countActiveAppointments(calendar.appointments.value),
     unit: '单'
   }
 ])

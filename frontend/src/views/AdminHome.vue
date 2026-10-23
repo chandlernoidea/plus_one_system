@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * 管理员工作台。
+ *
+ * 默认页是「档期」：抬头是今天的经营概况（单量 / 营收 / 待确认 / 在岗），
+ * 下面是全店月表或周表，右栏看某一天的订单与美甲师剩余时段。
+ *
+ * 其余模块（物料、评价、预约、薪酬、结算）通过顶部编号导航切换，
+ * 用 v-if 挂载/卸载，保证每次进入都拉最新数据。
+ */
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'

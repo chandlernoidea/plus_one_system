@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * 登录页：左侧品牌叙事 + 演示账号，右侧表单，中间一条竖线分栏。
+ *
+ * 版面意图是「打开一本册子」：左边讲这是什么系统、怎么试，
+ * 右边只留一件事——登录。演示账号直接列在左侧，答辩时不用翻文档。
+ */
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

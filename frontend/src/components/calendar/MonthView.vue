@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * 月视图：7 列 × 最多 6 行的日期网格。
+ *
+ * 每个格子先由 `cells` 计算成一份「渲染就绪」的数据：
+ * 日期、是否本月、当天预约（最多 3 条）、在岗人数、占用率。
+ * 模板只做展示，不再做数据拼装，避免 42 个格子各自重复计算。
+ *
+ * 键盘操作：方向键在格子间移动选中日，选中变化由父级统一处理。
+ */
 import { computed, nextTick } from 'vue'
 import { addDays, buildMonthGrid, fromKey, relativeDayLabel, toKey, WEEK_COLUMNS } from '../../utils/date'
 
@@ -14,6 +23,7 @@ const emit = defineEmits(['select'])
 const weeks = computed(() => buildMonthGrid(props.cursor))
 const todayKey = computed(() => props.data.todayKey)
 
+/** 每条预约在格子里显示什么：顾客端看项目，其余看顾客（去掉「顾客/美甲师」前缀） */
 function labelFor(appointment) {
   const short = (name) => (name || '').replace(/^(顾客|美甲师)/, '')
   if (props.role === 'CUSTOMER') {
@@ -60,6 +70,7 @@ function handleSelect(day) {
   emit('select', day.key)
 }
 
+/** 方向键：左右 ±1 天，上下 ±7 天；焦点跟随选中日 */
 function handleKeydown(event) {
   const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
   if (!(event.key in offsets)) {

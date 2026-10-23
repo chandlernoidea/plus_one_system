@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * 页面抬头：一句话结论 + 若干关键数字。
+ *
+ * 数字区由调用方算好传入，组件只负责排版；
+ * 窄屏隐藏单位（避免 390px 下「个 1 小时」换行），只保留数字与标签。
+ */
 defineProps({
   eyebrow: { type: String, default: '' },
   title: { type: String, default: '' },

@@ -1,4 +1,14 @@
 <script setup>
+/**
+ * 档期日历的编排层：工具条（月/周切换、翻页）+ 视图（月表/周表）+ 当日明细。
+ *
+ * 数据由父级通过 useCalendarData 注入，这里只负责：
+ * 1. 首次进入时按「先美甲师列表、再排班、最后当天时段」的顺序加载
+ *    （排班需要 staffId，时段需要排班结果）；
+ * 2. 浏览范围变化时补拉排班；
+ * 3. 选中日期变化时补拉该天的精确时段；
+ * 4. 选出视图之外的日子时，自动把游标移到那一天。
+ */
 import { computed, onMounted, ref, watch } from 'vue'
 import { fromKey, monthName, pad2 } from '../../utils/date'
 import MonthView from './MonthView.vue'

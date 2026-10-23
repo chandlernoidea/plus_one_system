@@ -1,4 +1,11 @@
 <script setup>
+/**
+ * 美甲师工作台。
+ *
+ * 只呈现「我」的视角：自己的档期（在岗 / 休假）、自己的预约、自己的工资。
+ * 日历数据层已经按角色过滤（useCalendarData.visibleStaffs），
+ * 这里不需要再判断归属。
+ */
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
@@ -10,7 +17,8 @@ import StaffAppointments from './staff/StaffAppointments.vue'
 import StaffSettlement from './staff/StaffSettlement.vue'
 import { useCalendarData } from '../composables/useCalendarData'
 import { useCalendarView } from '../composables/useCalendarView'
-import { dateKeyOf, endOfWeek, startOfWeek, toKey } from '../utils/date'
+import { endOfWeek, startOfWeek, toKey } from '../utils/date'
+import { findNextAppointment } from '../utils/appointments'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -45,26 +53,10 @@ const weekDutyDays = computed(() => {
   return days.size
 })
 
-const nextAppointment = computed(() => {
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes()
-  const candidates = calendar.appointments.value
-    .filter((item) => ['PENDING', 'CONFIRMED', 'RESCHEDULING'].includes(item.status))
-    .map((item) => ({
-      ...item,
-      key: dateKeyOf(item.confirmedStart || item.requestedStart),
-      time: (item.confirmedStart || item.requestedStart || '').slice(11, 16)
-    }))
-    .filter((item) => item.key && item.key >= calendar.todayKey)
-    .filter((item) => {
-      if (item.key !== calendar.todayKey) {
-        return true
-      }
-      const [hours, minutes] = item.time.split(':').map(Number)
-      return hours * 60 + minutes >= nowMinutes
-    })
-    .sort((a, b) => `${a.key} ${a.time}`.localeCompare(`${b.key} ${b.time}`))
-  return candidates[0] || null
-})
+// 下一单：在途预约里时间最近的一条（同一天要比较时分）
+const nextAppointment = computed(() =>
+  findNextAppointment(calendar.appointments.value, calendar.todayKey)
+)
 
 const ledeTitle = computed(() =>
   today.value.count ? `今天有 ${today.value.count} 个预约` : '今天没有预约，可以留给自己'

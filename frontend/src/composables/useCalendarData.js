@@ -70,7 +70,12 @@ export function useCalendarData() {
   const loadingSchedules = ref(false)
   const loadingSlots = ref(false)
 
+  // 已加载的排班范围（'from:to'），命中时跳过重复请求
   let scheduleRange = ''
+  // 每次排班请求自增，用于丢弃过期响应
+  let scheduleRequestToken = 0
+  // 正在请求空闲时段的日期，避免同一天重复打接口
+  const pendingSlotKeys = new Set()
   let staffsLoaded = false
   let appointmentsLoaded = false
 
@@ -82,6 +87,10 @@ export function useCalendarData() {
     return map
   })
 
+  /**
+   * 美甲师对应的线色。用 index 取模而不是随机，
+   * 保证同一人在月表、周表、图例里颜色一致。
+   */
   const staffTone = (staffId) => {
     const index = staffIndexById.value.get(staffId)
     return STAFF_TONES[(index ?? 0) % STAFF_TONES.length]
@@ -151,7 +160,16 @@ export function useCalendarData() {
     return map
   })
 
-  /** 某天在岗 / 休假的美甲师，附带空闲时段统计（若已加载） */
+  /**
+   * 某天的美甲师档期行（按 visibleStaffs 顺序，一人一行）。
+   *
+   * 返回值同时承担两种语义：
+   * - onDuty / onLeave：是否上班、是否整天调休（由排班决定，先于时段可用）；
+   * - available / windows：空闲时段统计，仅在 loadDaySlots 拉过当天后才有值，
+   *   未加载时为 null，视图需要区分「0 个空档」与「还没加载」。
+   *
+   * @param {string} key 'YYYY-MM-DD'
+   */
   function staffRowsForDay(key) {
     const perStaff = schedulesByDay.value.get(key)
     const slots = daySlots.value[key]
@@ -177,7 +195,14 @@ export function useCalendarData() {
     })
   }
 
-  /** 某天的汇总：单数、营收、待确认、在岗人数 */
+  /**
+   * 某天的汇总：预约数、营收、待确认数、在岗 / 休假人数。
+   *
+   * 营收只统计 COMPLETED 且已录入金额的单；待确认单不计入营收，
+   * 也不占用时段（时间槽由后端在审批通过时才标 BOOKED）。
+   *
+   * @param {string} key 'YYYY-MM-DD'
+   */
   function summaryForDay(key) {
     const list = appointmentsByDay.value.get(key) || []
     const rows = staffRowsForDay(key)
@@ -219,6 +244,7 @@ export function useCalendarData() {
     }
   }
 
+  /** 拉取全店在岗美甲师；只拉一次，失败允许下次重试 */
   async function loadStaffs() {
     if (staffsLoaded || loadingStaffs.value) {
       return
@@ -235,6 +261,11 @@ export function useCalendarData() {
     }
   }
 
+  /**
+   * 按角色拉取预约：
+   * - 顾客：/appointments/my（只看自己的）
+   * - 美甲师 / 管理员：/appointments/staff（后端按角色过滤）
+   */
   async function loadAppointments() {
     if (appointmentsLoaded || loadingAppointments.value) {
       return
@@ -252,32 +283,56 @@ export function useCalendarData() {
     }
   }
 
+  /**
+   * 拉取一个日期范围内的排班。
+   *
+   * 快速翻月时会出现多个并发请求，这里用递增的 token 做「最新请求获胜」：
+   * 每次发起请求自增 token，回来时只有 token 仍是最新的才写回状态，
+   * 避免旧月份的结果覆盖新月份。
+   */
   async function loadSchedules(from, to) {
     const rangeKey = `${from}:${to}`
-    if (scheduleRange === rangeKey || loadingSchedules.value) {
+    if (scheduleRange === rangeKey) {
       return
     }
+    // 美甲师只能看自己的排班；staffId 还没解析出来时先不请求，
+    // 避免 staffs 尚未加载时退化成「拉全店」
+    if (role.value === 'STAFF' && !myStaffId.value) {
+      return
+    }
+
+    const token = ++scheduleRequestToken
     loadingSchedules.value = true
     try {
       const targets =
-        role.value === 'STAFF' && myStaffId.value
+        role.value === 'STAFF'
           ? [myStaffId.value]
           : visibleStaffs.value.map((staff) => staff.staffId)
       const responses = await Promise.all(
         targets.map((staffId) => listSchedules({ staffId, from, to }))
       )
+      if (token !== scheduleRequestToken) {
+        return
+      }
       schedules.value = responses.flatMap((response) => response.data.data || [])
       scheduleRange = rangeKey
     } catch (error) {
-      schedules.value = []
+      if (token === scheduleRequestToken) {
+        schedules.value = []
+      }
     } finally {
-      loadingSchedules.value = false
+      if (token === scheduleRequestToken) {
+        loadingSchedules.value = false
+      }
     }
   }
 
-  /** 选中某天时再取精确时段，月表翻页不必为每天付出一次请求 */
+  /**
+   * 选中某天时再取精确时段，月表翻页不必为每天付出一次请求。
+   * 结果按日期缓存；同一天重复点击不会重复请求，不同天可以并发。
+   */
   async function loadDaySlots(key) {
-    if (daySlots.value[key] || loadingSlots.value) {
+    if (daySlots.value[key] || pendingSlotKeys.has(key)) {
       return
     }
     const rows = staffRowsForDay(key).filter((row) => row.onDuty)
@@ -285,6 +340,7 @@ export function useCalendarData() {
       daySlots.value = { ...daySlots.value, [key]: [] }
       return
     }
+    pendingSlotKeys.add(key)
     loadingSlots.value = true
     try {
       const responses = await Promise.all(
@@ -308,47 +364,26 @@ export function useCalendarData() {
     } catch (error) {
       daySlots.value = { ...daySlots.value, [key]: [] }
     } finally {
-      loadingSlots.value = false
-    }
-  }
-
-  /** 强制刷新（评审数据变化后使用） */
-  async function refresh(from, to) {
-    appointmentsLoaded = false
-    staffsLoaded = false
-    scheduleRange = ''
-    daySlots.value = {}
-    await Promise.all([loadStaffs(), loadAppointments()])
-    if (from && to) {
-      await loadSchedules(from, to)
+      pendingSlotKeys.delete(key)
+      loadingSlots.value = pendingSlotKeys.size > 0
     }
   }
 
   const todayKey = toKey(new Date())
 
+  // 只暴露视图真正用到的成员：内部索引（appointmentsByDay 等）不对外，避免调用方绕过派生逻辑
   return {
-    role,
-    staffs,
     visibleStaffs,
-    myStaffId,
     appointments,
     schedules,
-    daySlots,
-    loading: computed(
-      () => loadingStaffs.value || loadingAppointments.value || loadingSchedules.value
-    ),
-    loadingSlots,
+    todayKey,
     staffRowsForDay,
     summaryForDay,
     dayLoad,
-    appointmentsByDay,
-    schedulesByDay,
     staffTone,
-    todayKey,
     loadStaffs,
     loadAppointments,
     loadSchedules,
-    loadDaySlots,
-    refresh
+    loadDaySlots
   }
 }

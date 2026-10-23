@@ -1,4 +1,15 @@
 <script setup>
+/**
+ * 当日明细面板，位于日历右侧（窄屏时下移）。
+ *
+ * 三端共用同一结构，但语义不同：
+ * - 管理员：当天订单 + 每位在岗美甲师的剩余时段；
+ * - 美甲师：只看自己的档期与预约，没排班的日子给出「去排班」入口；
+ * - 顾客：只看在岗美甲师和可约窗口，点击「预约」带着日期与美甲师跳转。
+ *
+ * 注意 available / windows 为 null 表示「时段还没加载」，
+ * 与 0（确实约满）必须区分开，否则会出现「待载入」被判成「已约满」。
+ */
 import { computed } from 'vue'
 import {
   formatMoney,
@@ -24,6 +35,7 @@ const summary = computed(() => props.data.summaryForDay(props.selectedKey))
 const rows = computed(() => props.data.staffRowsForDay(props.selectedKey).filter((row) => row.onDuty || row.onLeave))
 const isFuture = computed(() => props.selectedKey > props.data.todayKey)
 
+/** 同一块区域在不同角色下的叫法：我的档期 / 可预约美甲师 / 在岗美甲师 */
 const staffSectionTitle = computed(() => {
   if (props.role === 'STAFF') {
     return '我的档期'

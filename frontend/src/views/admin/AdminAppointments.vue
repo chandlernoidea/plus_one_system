@@ -1,7 +1,17 @@
 <script setup>
+/**
+ * 管理员 · 预约管理。
+ *
+ * 展示全店预约（后端 /appointments/staff 对管理员返回全部），支持：
+ * - 按状态筛选（服务端过滤）；
+ * - 按「每 3 天一段」的日期段筛选（前端过滤，默认落在今天所在段）；
+ * - 撤销爽约、修正已完成订单金额。
+ *
+ * 两段筛选叠加：状态变化会重新拉数据，日期段的选中状态会尽量保留。
+ */
 import { computed, onMounted, ref } from 'vue'
 import DateBlockBar from '../../components/DateBlockBar.vue'
-import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
+import { useDateBlockSelection } from '../../composables/useDateBlockSelection'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   exemptNoShow,
@@ -12,9 +22,6 @@ import {
 const appointments = ref([])
 const loading = ref(false)
 const statusFilter = ref('ALL')
-const blockKey = ref(null)
-const explicitAll = ref(false)
-const initialised = ref(false)
 const actionId = ref(null)
 const amountDialogVisible = ref(false)
 const amountTarget = ref(null)
@@ -44,32 +51,14 @@ const statusConfig = {
 
 const dayOf = (row) => String(row.requestedStart || '').slice(0, 10)
 
-const blocks = computed(() => buildDateBlocks(appointments.value, dayOf))
-const activeBlock = computed(
-  () => blocks.value.find((block) => block.key === blockKey.value) || null
-)
-
-/** 默认落在今天所在的三天段，历史数据不再淹掉当天要处理的行 */
-const visibleAppointments = computed(() =>
-  filterByBlock(appointments.value, activeBlock.value, dayOf)
-)
-
-function onPick(key) {
-  blockKey.value = key
-  explicitAll.value = key === null
-}
-
-function applyDefaultBlock() {
-  if (explicitAll.value) {
-    return
-  }
-  const exists = blocks.value.some((block) => block.key === blockKey.value)
-  if (!initialised.value || !exists) {
-    const fallback = blocks.value.find((block) => block.isCurrent) || blocks.value[0]
-    blockKey.value = fallback ? fallback.key : null
-    initialised.value = true
-  }
-}
+// 默认落在今天所在的三天段，历史数据不再淹掉当天要处理的行
+const {
+  blockKey,
+  blocks,
+  visible: visibleAppointments,
+  pick,
+  applyDefault
+} = useDateBlockSelection(appointments, dayOf)
 
 function statusInfo(status) {
   return statusConfig[status] || { label: status || '未知', type: 'info' }
@@ -85,7 +74,7 @@ async function loadAppointments() {
     const status = statusFilter.value === 'ALL' ? '' : statusFilter.value
     const response = await listStaffAppointments({ status })
     appointments.value = response.data.data || []
-    applyDefaultBlock()
+    applyDefault()
   } catch (error) {
     appointments.value = []
   } finally {
@@ -172,7 +161,7 @@ onMounted(loadAppointments)
       :blocks="blocks"
       :model-value="blockKey"
       :total="appointments.length"
-      @update:model-value="onPick"
+      @update:model-value="pick"
     />
 
     <el-card shadow="never">

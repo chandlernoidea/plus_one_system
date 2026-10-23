@@ -12,6 +12,11 @@ import {
 /**
  * 日历的浏览状态：当前看向哪一天、月视图还是周视图、选中的是哪一天。
  * 三个角色共用同一套浏览逻辑，差异只体现在数据口径上。
+ *
+ * 三个状态的关系：
+ * - cursor：当前视图的范围（按月或按周），决定拉哪段排班；
+ * - selectedKey：右栏明细看的是哪一天，可以落在 cursor 范围之外；
+ * - mode：月 / 周，切换时把 cursor 对齐到 selectedKey，避免视图跳走。
  */
 export function useCalendarView() {
   const mode = ref('month')

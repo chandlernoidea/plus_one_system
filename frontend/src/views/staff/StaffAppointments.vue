@@ -1,7 +1,14 @@
 <script setup>
+/**
+ * 美甲师 · 预约管理。
+ *
+ * 默认只看「待确认」，方便逐单审批；切到其他状态时列表可能很长，
+ * 因此额外提供「每 3 天一段」的日期段。这里刻意不自动选中今天段：
+ * 待审批的单分散在未来几天，自动过滤会把它们藏起来。
+ */
 import { computed, onMounted, ref } from 'vue'
 import DateBlockBar from '../../components/DateBlockBar.vue'
-import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
+import { useDateBlockSelection } from '../../composables/useDateBlockSelection'
 import { ElMessage } from 'element-plus'
 import {
   approveAppointment,
@@ -13,7 +20,6 @@ import StaffAppointmentDetail from './StaffAppointmentDetail.vue'
 const appointments = ref([])
 const loading = ref(false)
 const statusFilter = ref('PENDING')
-const blockKey = ref(null)
 const approvingId = ref(null)
 const rejectDialogVisible = ref(false)
 const rejecting = ref(false)
@@ -48,12 +54,11 @@ const statusConfig = {
 }
 
 const dayOf = (row) => String(row.requestedStart || '').slice(0, 10)
-const blocks = computed(() => buildDateBlocks(appointments.value, dayOf))
-const activeBlock = computed(
-  () => blocks.value.find((block) => block.key === blockKey.value) || null
-)
-const visibleAppointments = computed(() =>
-  filterByBlock(appointments.value, activeBlock.value, dayOf)
+// 美甲师侧不自动选中「今天」段：待审批的单分散在未来几天，默认必须看到全部
+const { blockKey, blocks, visible: visibleAppointments, pick } = useDateBlockSelection(
+  appointments,
+  dayOf,
+  { autoSelectCurrent: false }
 )
 
 function statusInfo(status) {
@@ -157,7 +162,7 @@ onMounted(loadAppointments)
       :blocks="blocks"
       :model-value="blockKey"
       :total="appointments.length"
-      @update:model-value="blockKey = $event"
+      @update:model-value="pick"
     />
 
     <el-card shadow="never">
