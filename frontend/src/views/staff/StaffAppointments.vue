@@ -1,5 +1,7 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import DateBlockBar from '../../components/DateBlockBar.vue'
+import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
 import { ElMessage } from 'element-plus'
 import {
   approveAppointment,
@@ -11,6 +13,7 @@ import StaffAppointmentDetail from './StaffAppointmentDetail.vue'
 const appointments = ref([])
 const loading = ref(false)
 const statusFilter = ref('PENDING')
+const blockKey = ref(null)
 const approvingId = ref(null)
 const rejectDialogVisible = ref(false)
 const rejecting = ref(false)
@@ -43,6 +46,15 @@ const statusConfig = {
   COMPLETED: { label: '已完成', type: 'info' },
   NO_SHOW: { label: '爽约', type: 'danger' }
 }
+
+const dayOf = (row) => String(row.requestedStart || '').slice(0, 10)
+const blocks = computed(() => buildDateBlocks(appointments.value, dayOf))
+const activeBlock = computed(
+  () => blocks.value.find((block) => block.key === blockKey.value) || null
+)
+const visibleAppointments = computed(() =>
+  filterByBlock(appointments.value, activeBlock.value, dayOf)
+)
 
 function statusInfo(status) {
   return statusConfig[status] || { label: status || '未知', type: 'info' }
@@ -141,8 +153,15 @@ onMounted(loadAppointments)
       </div>
     </div>
 
+    <DateBlockBar
+      :blocks="blocks"
+      :model-value="blockKey"
+      :total="appointments.length"
+      @update:model-value="blockKey = $event"
+    />
+
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="appointments" stripe>
+      <el-table v-loading="loading" :data="visibleAppointments" stripe>
         <el-table-column prop="customerName" label="顾客" min-width="110" />
         <el-table-column prop="serviceTypeName" label="项目类型" min-width="130" />
         <el-table-column prop="requestedStart" label="申请开始时间" width="180" />

@@ -1,37 +1,47 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { listUpcomingPreps } from '../../api/prep'
+import DateBlockBar from '../../components/DateBlockBar.vue'
+import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
+
+const PREP_DAYS = 30
 
 const preps = ref([])
 const loading = ref(false)
-const days = ref(7)
-
-const rangeOptions = [
-  { label: '今天', value: 1 },
-  { label: '未来 7 天', value: 7 },
-  { label: '未来 30 天', value: 30 }
-]
+const blockKey = ref(null)
+const explicitAll = ref(false)
+const initialised = ref(false)
 
 const statusConfig = {
   PENDING: { label: '待准备', type: 'warning' },
   READY: { label: '已就绪', type: 'success' }
 }
 
-const rangeLabel = computed(
-  () => rangeOptions.find((option) => option.value === days.value)?.label || `未来 ${days.value} 天`
+const dayOf = (row) => String(row.appointmentTime || '').slice(0, 10)
+
+const blocks = computed(() => buildDateBlocks(preps.value, dayOf))
+const activeBlock = computed(
+  () => blocks.value.find((block) => block.key === blockKey.value) || null
+)
+const visiblePreps = computed(() => filterByBlock(preps.value, activeBlock.value, dayOf))
+
+const readyCount = computed(
+  () => visiblePreps.value.filter((item) => item.prepStatus === 'READY').length
 )
 
 const heading = computed(() =>
-  days.value === 1 ? '今日物料准备' : `${rangeLabel.value}物料准备`
+  activeBlock.value ? `物料准备 · ${activeBlock.value.label}` : '物料准备'
 )
 
-const subtitle = computed(() =>
-  days.value === 1
-    ? '按今天已确认预约汇总款式、效果图和物料信息'
-    : `按${rangeLabel.value}（含今天）已确认预约汇总款式、效果图和物料信息`
-)
-
-const readyCount = computed(() => preps.value.filter((item) => item.prepStatus === 'READY').length)
+const subtitle = computed(() => {
+  if (activeBlock.value) {
+    return `未来 30 天内的工单，当前只看 ${activeBlock.value.label}；点上方日期段可切换`
+  }
+  if (preps.value.length === 0) {
+    return '未来 30 天内暂无已确认预约的工单'
+  }
+  return `未来 30 天内的工单共 ${preps.value.length} 条；点上方日期段可只看三天`
+})
 
 function statusInfo(status) {
   return statusConfig[status] || { label: status || '未知', type: 'info' }
@@ -57,11 +67,29 @@ function updatedText(value) {
   return String(value).slice(5, 16)
 }
 
+function onPick(key) {
+  blockKey.value = key
+  explicitAll.value = key === null
+}
+
+function applyDefaultBlock() {
+  if (explicitAll.value) {
+    return
+  }
+  const exists = blocks.value.some((block) => block.key === blockKey.value)
+  if (!initialised.value || !exists) {
+    const fallback = blocks.value.find((block) => block.isCurrent) || blocks.value[0]
+    blockKey.value = fallback ? fallback.key : null
+    initialised.value = true
+  }
+}
+
 async function loadPreps() {
   loading.value = true
   try {
-    const response = await listUpcomingPreps(days.value)
+    const response = await listUpcomingPreps(PREP_DAYS)
     preps.value = response.data.data || []
+    applyDefaultBlock()
   } catch (error) {
     preps.value = []
   } finally {
@@ -80,21 +108,20 @@ onMounted(loadPreps)
         <p>{{ subtitle }}</p>
       </div>
       <div class="header-actions">
-        <span class="list-count mono">{{ preps.length }} 条 · 就绪 {{ readyCount }}</span>
-        <el-select v-model="days" style="width: 130px" @change="loadPreps">
-          <el-option
-            v-for="option in rangeOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
+        <span class="list-count mono">{{ visiblePreps.length }} 条 · 就绪 {{ readyCount }}</span>
         <el-button @click="loadPreps">刷新</el-button>
       </div>
     </div>
 
+    <DateBlockBar
+      :blocks="blocks"
+      :model-value="blockKey"
+      :total="preps.length"
+      @update:model-value="onPick"
+    />
+
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="preps" stripe>
+      <el-table v-loading="loading" :data="visiblePreps" stripe>
         <el-table-column type="expand">
           <template #default="{ row }">
             <div class="expand-content">
@@ -148,8 +175,8 @@ onMounted(loadPreps)
         </el-table-column>
       </el-table>
       <el-empty
-        v-if="!loading && preps.length === 0"
-        :description="days === 1 ? '今天暂无已确认预约的物料工单' : `${rangeLabel}内暂无已确认预约的物料工单`"
+        v-if="!loading && visiblePreps.length === 0"
+        :description="activeBlock ? `${activeBlock.label} 没有物料工单` : '暂无物料工单'"
       />
     </el-card>
   </section>
