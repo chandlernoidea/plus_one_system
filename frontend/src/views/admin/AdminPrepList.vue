@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { confirmPrep, listUpcomingPreps, unconfirmPrep } from '../../api/prep'
+import { confirmPrep, listUpcomingPreps, unconfirmPrep, updatePrep } from '../../api/prep'
+import ImageUploader from '../../components/ImageUploader.vue'
 import DateBlockBar from '../../components/DateBlockBar.vue'
 import { buildDateBlocks, filterByBlock } from '../../utils/dateBlocks'
 
@@ -13,6 +14,16 @@ const blockKey = ref(null)
 const explicitAll = ref(false)
 const initialised = ref(false)
 const actionId = ref(null)
+
+const editVisible = ref(false)
+const editTarget = ref(null)
+const saving = ref(false)
+const editForm = reactive({
+  styleDescription: '',
+  effectImageUrl: '',
+  materialJson: '',
+  staffNote: ''
+})
 
 const statusConfig = {
   PENDING: { label: '待准备', type: 'warning' },
@@ -67,6 +78,50 @@ function updatedText(value) {
     return '—'
   }
   return String(value).slice(5, 16)
+}
+
+const materialHint = computed(() => {
+  const text = editForm.materialJson.trim()
+  if (!text) {
+    return '可留空；填写后美甲师与管理员都能看到'
+  }
+  try {
+    JSON.parse(text)
+    return 'JSON 格式有效'
+  } catch (error) {
+    return '不是合法 JSON，保存后按原文展示'
+  }
+})
+
+function openEdit(row) {
+  editTarget.value = row
+  editForm.styleDescription = row.styleDescription || ''
+  editForm.effectImageUrl = row.effectImageUrl || ''
+  editForm.materialJson = row.materialJson || ''
+  editForm.staffNote = row.staffNote || ''
+  editVisible.value = true
+}
+
+async function saveEdit() {
+  if (!editTarget.value) {
+    return
+  }
+  saving.value = true
+  try {
+    await updatePrep(editTarget.value.appointmentId, {
+      styleDescription: editForm.styleDescription,
+      effectImageUrl: editForm.effectImageUrl,
+      materialJson: editForm.materialJson,
+      staffNote: editForm.staffNote
+    })
+    ElMessage.success('物料已保存')
+    editVisible.value = false
+    await loadPreps()
+  } catch (error) {
+    // 错误提示由 request.js 统一处理
+  } finally {
+    saving.value = false
+  }
 }
 
 async function handleConfirm(row) {
@@ -201,8 +256,9 @@ onMounted(loadPreps)
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="112" fixed="right">
+        <el-table-column label="操作" width="156" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button
               v-if="row.prepStatus !== 'READY'"
               link
@@ -228,6 +284,55 @@ onMounted(loadPreps)
         :description="activeBlock ? `${activeBlock.label} 没有物料工单` : '暂无物料工单'"
       />
     </el-card>
+
+    <el-dialog v-model="editVisible" title="编辑物料工单" width="560px">
+      <div v-if="editTarget" class="edit-meta">
+        <span class="mono">{{ editTarget.appointmentTime }}</span>
+        <span>{{ editTarget.customerName }}</span>
+        <span>{{ editTarget.staffName }}</span>
+        <span>{{ editTarget.serviceTypeName }}</span>
+      </div>
+
+      <el-form label-width="88px" class="edit-form">
+        <el-form-item label="款式说明">
+          <el-input
+            v-model="editForm.styleDescription"
+            type="textarea"
+            :rows="2"
+            maxlength="1000"
+            show-word-limit
+            placeholder="描述款式、颜色、风格"
+          />
+        </el-form-item>
+        <el-form-item label="效果图">
+          <ImageUploader v-model="editForm.effectImageUrl" />
+        </el-form-item>
+        <el-form-item label="物料清单">
+          <el-input
+            v-model="editForm.materialJson"
+            type="textarea"
+            :rows="5"
+            placeholder='可留空，支持 JSON，例如 {"色号":"N01","饰品":"水钻"}'
+          />
+          <div class="form-hint">{{ materialHint }}</div>
+        </el-form-item>
+        <el-form-item label="美甲师备注">
+          <el-input
+            v-model="editForm.staffNote"
+            type="textarea"
+            :rows="2"
+            maxlength="500"
+            show-word-limit
+            placeholder="内部备注"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="saveEdit">保存</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -261,6 +366,28 @@ onMounted(loadPreps)
 .prep-thumb {
   width: 48px;
   height: 48px;
+}
+
+.edit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.edit-form {
+  margin-top: var(--s2);
+}
+
+.form-hint {
+  margin-top: 4px;
+  color: var(--ink-4);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .empty-text {
