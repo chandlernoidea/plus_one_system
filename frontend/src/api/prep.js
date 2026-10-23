@@ -12,6 +12,10 @@ export function getPrepCustomerView(appointmentId) {
   return request.get(`/preps/${appointmentId}/customer-view`)
 }
 
-export function listTodayPreps() {
-  return request.get('/preps/today')
+/**
+ * 今天起 N 天内的物料工单，默认 7 天。
+ * 后端未升级时参数会被忽略，退化为「只看今天」，不会报错。
+ */
+export function listUpcomingPreps(days = 7) {
+  return request.get('/preps/today', { params: { days } })
 }

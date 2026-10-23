@@ -23,7 +23,7 @@ const activeView = ref('calendar')
 
 const nav = [
   { key: 'calendar', label: '档期' },
-  { key: 'prep', label: '今日物料' },
+  { key: 'prep', label: '物料准备' },
   { key: 'review', label: '评价' },
   { key: 'appointments', label: '预约管理' },
   { key: 'rule', label: '薪酬规则' },

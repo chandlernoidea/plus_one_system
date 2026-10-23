@@ -115,15 +115,25 @@ public class PrepService {
         return toCustomerView(prep);
     }
 
+    /**
+     * 今天起 {@code days} 天内已确认预约的物料工单（含今天）。
+     * 管理员物料页默认看未来 7 天：美甲师往往提前几天备料，
+     * 只看今天会漏掉跨天的更新。
+     *
+     * @param days 天数，取值会被收敛到 1–30
+     * @return 按预约时间升序的工单
+     */
     @Transactional(readOnly = true)
-    public List<PrepTodayResponse> listToday() {
+    public List<PrepTodayResponse> listUpcoming(int days) {
         CurrentUser currentUser = requireCurrentUser();
         if (!ROLE_ADMIN.equals(currentUser.getRoleCode())) {
             throw new IllegalArgumentException("无权操作");
         }
 
-        LocalDateTime dayStart = LocalDate.now().atStartOfDay();
-        LocalDateTime dayEnd = dayStart.plusDays(1);
+        int span = Math.min(Math.max(days, 1), 30);
+        LocalDate today = LocalDate.now();
+        LocalDateTime dayStart = today.atStartOfDay();
+        LocalDateTime dayEnd = today.plusDays(span).atStartOfDay();
         List<Appointment> appointments = appointmentRepository
                 .findByConfirmedStartBetweenAndStatusInOrderByConfirmedStartAsc(
                         dayStart, dayEnd, PREP_APPOINTMENT_STATUSES);
