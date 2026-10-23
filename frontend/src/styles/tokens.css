@@ -62,4 +62,13 @@
   /* ---- 版心 ---- */
   --shell-max: 1480px;
   --gutter: 24px;
+
+  /* ---- 外壳高度：吸顶元素（周表表头等）靠它避让 ---- */
+  --shell-bar-h: 69px;
+}
+
+@media (max-width: 960px) {
+  :root {
+    --shell-bar-h: 88px;
+  }
 }

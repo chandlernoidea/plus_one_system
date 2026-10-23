@@ -83,6 +83,12 @@ const nowMinutes = computed(() => {
   return now.getHours() * 60 + now.getMinutes()
 })
 
+// 当前时刻落在时间轴范围之外时（清晨或深夜）不画「现在」线，
+// 否则它会按分钟数算到表格外面，变成页面底部的一条孤立红线
+const showNowLine = computed(
+  () => nowMinutes.value >= bounds.value.min && nowMinutes.value <= bounds.value.max
+)
+
 /**
  * 同一时段并排：把互相重叠的预约分到不同列。
  *
@@ -209,7 +215,7 @@ function labelFor(appointment) {
               {{ day.onLeave ? '休假' : '未排班' }}
             </span>
 
-            <template v-if="day.isToday">
+            <template v-if="day.isToday && showNowLine">
               <span
                 class="now-line"
                 :style="{ top: `${TOP_INSET + ((nowMinutes - bounds.min) / 60) * HOUR}px` }"
@@ -246,10 +252,25 @@ function labelFor(appointment) {
   border-bottom: 1px solid var(--line);
 }
 
+/* 窄屏才需要周表自己的横向滚动（表头随之横向移动，不再纵向吸顶） */
+@media (max-width: 720px) {
+  .week {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* 窄屏下 .week 成了滚动容器，sticky 的基准变成它自己：
+     沿用页头高度会把表头顶下去 88px，这里归零。
+     选择器要多一层 .week，才能压过后面的基础规则。 */
+  .week .week-head {
+    top: 0;
+  }
+}
+
+/* 纵向滚动交给页面：周表内部再套滚动容器时，
+   吸顶表头会贴在容器顶边（已被页头盖住），滚动时日期行会钻到页头底下 */
 .week-scroll {
-  overflow: auto;
-  max-height: 620px;
-  scrollbar-width: thin;
+  overflow: visible;
 }
 
 .week-inner {
@@ -260,7 +281,7 @@ function labelFor(appointment) {
 
 .week-head {
   position: sticky;
-  top: 0;
+  top: var(--shell-bar-h);
   z-index: 3;
   display: grid;
   grid-template-columns: 56px repeat(7, minmax(0, 1fr));

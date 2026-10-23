@@ -112,8 +112,8 @@ const seasonStamp = computed(() => `${today.getFullYear()} ${monthName(today)}`)
   top: 0;
   z-index: 40;
   border-bottom: 1px solid var(--line);
-  background: rgba(243, 238, 228, 0.94);
-  backdrop-filter: blur(6px);
+  /* 不透明纸面：吸顶时下方内容不应透出来（周表表头曾在此处「透字」） */
+  background: var(--paper);
 }
 
 .shell-inner {

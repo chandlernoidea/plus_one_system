@@ -210,7 +210,8 @@ function goBook(staffId) {
 <style scoped>
 .panel {
   position: sticky;
-  top: 92px;
+  /* 页头高度 + 一点呼吸间距 */
+  top: calc(var(--shell-bar-h) + 24px);
   display: flex;
   flex-direction: column;
   gap: var(--s5);
