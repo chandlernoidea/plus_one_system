@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用说明书-美甲师</title>
+<style>
+@page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Source Han Sans CN", "Noto Sans CJK SC", "PingFang SC", sans-serif;
+  font-size: 11pt; line-height: 1.75; color: #1c1a17; margin: 0;
+}
+h1 { font-size: 22pt; margin: 0 0 4mm; letter-spacing: 0.01em; }
+h2 { font-size: 15pt; margin: 9mm 0 3mm; padding-bottom: 2mm;
+     border-bottom: 1px solid #ddd6c8; page-break-after: avoid; }
+h3 { font-size: 12.5pt; margin: 6mm 0 2mm; page-break-after: avoid; }
+p { margin: 0 0 2.5mm; }
+a { color: #8a3324; text-decoration: none; }
+blockquote {
+  margin: 3mm 0; padding: 2mm 0 2mm 4mm; border-left: 3px solid #c8b89a;
+  color: #4a443c; background: #faf7f1;
+}
+blockquote p:last-child { margin-bottom: 0; }
+code {
+  font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace;
+  font-size: 0.88em; background: #f2eee6; padding: 0.4mm 1.2mm; border-radius: 1mm;
+}
+pre {
+  background: #f7f4ee; border: 1px solid #e4dccd; border-radius: 2mm;
+  padding: 3mm 4mm; overflow-x: auto; page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 9pt; line-height: 1.6; }
+table {
+  width: 100%; border-collapse: collapse; margin: 3mm 0 4mm;
+  font-size: 10pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #e0d8c8; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+th { background: #f5f1e8; font-weight: 600; }
+hr { border: 0; border-top: 1px solid #ddd6c8; margin: 7mm 0; }
+img { max-height: 96mm; max-width: 45%; border: 1px solid #e4dccd; border-radius: 2mm; margin: 2mm 0; }
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin-bottom: 1mm; }
+.toc-note { color: #6b6459; font-size: 10pt; }
+h2, h3 { page-break-after: avoid; }
+</style>
+</head>
+<body>
+<h1>指间工作室 · 使用说明书</h1>
+<blockquote><p>给美甲师自己看的一本说明。不用懂电脑，照着点就行。</p><p>遇到不认识的词，最后一节有对照表。</p></blockquote>
+<h2>这套系统是干什么的</h2>
+<p>一句话：<strong>把你脑子里的排期表、微信里的定金记录、抽屉里的材料单，放进一个地方。</strong></p>
+<p>它只帮你盯四件事：</p>
+<ol>
+<li><strong>今天给谁做、做什么款、几点到几点</strong>（不撞档、不漏人）</li>
+<li><strong>材料够不够</strong>（当天要用的料，缺什么一目了然）</li>
+<li><strong>定金收没收、该不该退</strong>（每一笔都有记录）</li>
+<li><strong>这个月赚了多少</strong>（收入、支出、净收入，对得上账）</li>
+</ol>
+<p>它<strong>不会</strong>做的事，先说清楚，免得你等功能：不会替你发微信、不会在线收款、客人没有账号、不会自动排班。</p>
+<blockquote><p>文里说的「装系统的人」，就是帮你在服务器上装好这套东西的那个人。</p><p><strong>很可能就是你自己</strong>（如果你是按说明自己装的），那就把「找装系统的人」理解成「把这事记下来，回头在电脑上处理」。</p></blockquote>
+<hr>
+<h2>目录</h2>
+<ul>
+<li><a href="#一第一次打开">一、第一次打开</a></li>
+<li><a href="#二先认清这几样配图">二、先认清这几样（配图）</a></li>
+<li><a href="#三正式用之前先建几个常用款">三、正式用之前：先建几个常用款</a></li>
+<li><a href="#四建单3-分钟排进一单">四、建单：3 分钟排进一单</a></li>
+<li><a href="#五一天的流程最常用">五、一天的流程（最常用）</a></li>
+<li><a href="#六定金收了以后可能出现的三种结局">六、定金：收了以后可能出现的三种结局</a></li>
+<li><a href="#七客户档案">七、客户档案</a></li>
+<li><a href="#八看整周插单往后顺延">八、看整周、插单、往后顺延</a></li>
+<li><a href="#九材料今天要买什么这单用了什么">九、材料：今天要买什么、这单用了什么</a></li>
+<li><a href="#十算账">十、算账</a></li>
+<li><a href="#十一每天三组要发的微信">十一、每天三组要发的微信</a></li>
+<li><a href="#十二改自己的账号和密码">十二、改自己的账号和密码</a></li>
+<li><a href="#十三手机和电脑">十三、手机和电脑</a></li>
+<li><a href="#十四出问题了怎么办">十四、出问题了怎么办</a></li>
+<li><a href="#十五一页速查建议截图存手机">十五、一页速查（建议截图存手机）</a></li>
+<li><a href="#附录名词对照">附录：名词对照</a></li>
+</ul>
+<hr>
+<h2>一、第一次打开</h2>
+<h3>在手机上打开</h3>
+<p>用手机自带的浏览器（Safari、Chrome 这类），在地址栏输入装系统的人给你的网址，形如：</p>
+<pre><code>http://115.190.195.217</code></pre>
+<ul>
+<li>这串数字<strong>一个都不能错</strong>，错一位就打不开。建议让装系统的人把它做成二维码发给你，扫码直接进。</li>
+<li>手机上可以把网址「添加到主屏幕」（Safari：分享 → 添加到主屏幕；安卓 Chrome：右上角三个点 → 添加到主屏幕），以后像 App 一样点开。</li>
+</ul>
+<h3>登录</h3>
+<p><img alt="登录页" src="../screenshots/solo-login.png"></p>
+<table><thead><tr><th>要填的</th><th>填什么</th></tr></thead><tbody>
+<tr><td>账号</td><td><code>admin</code>（如果改过登录名，就填新的）</td></tr>
+<tr><td>密码</td><td>装系统的人给你的那一串</td></tr>
+</tbody></table>
+<p>点「<strong>登录</strong>」。</p>
+<blockquote><p><strong>账号只有一个</strong>。这套系统没有员工账号、没有客户账号，整台机器就是你一个人用。</p><p>右上角有「<strong>退出</strong>」，用别人的手机登过，记得退出。</p></blockquote>
+<h3>进去以后</h3>
+<p>直接落在「<strong>今天</strong>」这一页。今天还没排单的话，会显示「今天还没有单 · 点「建一单」把第一单排进去」。</p>
+<hr>
+<h2>二、先认清这几样（配图）</h2>
+<h3>1. 底部三个入口</h3>
+<p>手机上，屏幕最下面永远有这三个，点一下就切换：</p>
+<p><img alt="今天" src="../screenshots/use-today.png"></p>
+<table><thead><tr><th>入口</th><th>里面是什么</th></tr></thead><tbody>
+<tr><td><strong>今天</strong></td><td>今天的排期，一单一单排下来，中间的空当写着「可塞 N 分钟」</td></tr>
+<tr><td><strong>排期</strong></td><td>一整个星期 7 列，一眼看出哪天满、哪天有空</td></tr>
+<tr><td><strong>客户</strong></td><td>你所有的客人，按「最近到访」排序</td></tr>
+</tbody></table>
+<h3>2. 顶部四个入口</h3>
+<p>屏幕上那条标题栏下面横着四个：<strong>款式库 · 物料 · 财务 · 设置</strong>。</p>
+<p>这四个平时不常点，是有事才去的地方。点进去后，左上角有「<strong>← 返回</strong>」（有的页面直接写「<strong>← 今天</strong>」），点它回到上一层。</p>
+<h3>3. 一单长什么样</h3>
+<p><img alt="今天的排期" src="../screenshots/use-today.png"></p>
+<p>每一单是一张卡片：</p>
+<pre><code>┌──────────────────────────────────────┐
+│ #C002  阿岚                 已定档   │   ← 短号、名字、状态
+│ 法式裸粉  90&#x27;                 168    │   ← 做了什么款、多久、多少钱
+│ [定金 已收] [料 未领]  110 分钟 · ¥168 │  ← 标签 + 共占时间
+│ [到店] [改期] [取消] [爽约]          │   ← 现在能做的操作
+└──────────────────────────────────────┘</code></pre>
+<ul>
+<li><strong>短号</strong>（<code>#C002</code>）：系统给每个客人编的号，几个字就能搜到人</li>
+<li><strong>两个方框标签</strong>：<code>定金</code> 和 <code>料</code></li>
+<li>定金：<code>未收</code> / <code>已收</code> / <code>已退</code> / <code>已没收</code></li>
+<li>料：<code>未领</code> / <code>已领 2</code>（数字＝这一单领了几样料）</li>
+<li>右边那串文字：<strong>共占多少分钟</strong>（做活 + 缓冲）· <strong>这单收多少钱</strong></li>
+</ul>
+<h3>4. 卡片上的按钮会变</h3>
+<p>这点最容易懵：<strong>同一张卡片，在不同阶段按钮不一样。</strong></p>
+<table><thead><tr><th>卡片状态</th><th>你能点的按钮</th></tr></thead><tbody>
+<tr><td>待定金</td><td>收定金 · 改期 · 取消 · 爽约</td></tr>
+<tr><td>已定档</td><td>到店 · 改期 · 取消 · 爽约</td></tr>
+<tr><td>已到店</td><td>开始 · 改期 · 取消</td></tr>
+<tr><td>服务中</td><td>完成</td></tr>
+<tr><td>已完成 / 已取消</td><td>没有按钮了，只剩记录</td></tr>
+</tbody></table>
+<p>所以：<strong>点过「到店」才会冒出「开始」，点过「开始」才会冒出「完成」。</strong> 顺序不能跳。</p>
+<hr>
+<h2>三、正式用之前：先建几个常用款</h2>
+<p><strong>为什么先做这一步</strong>：建单时要选款式，而款式得先有。把常做的几个款建进去，以后建单就是点两下的事。</p>
+<h3>怎么建</h3>
+<ol>
+<li>顶部点「<strong>款式库</strong>」</li>
+<li><strong>右上角</strong>点「<strong>＋ 新建</strong>」</li>
+<li>填这几项：</li>
+</ol>
+<table><thead><tr><th>项目</th><th>怎么填</th><th>例子</th></tr></thead><tbody>
+<tr><td><strong>名称</strong></td><td>客人听得懂的名字</td><td>法式裸粉</td></tr>
+<tr><td><strong>封面</strong></td><td>选填，可以后补。用手机拍照上传</td><td>—</td></tr>
+<tr><td><strong>标准时长</strong></td><td>大概做多久，填<strong>分钟</strong></td><td>90</td></tr>
+<tr><td><strong>标准价</strong></td><td>一般收多少，填<strong>元</strong></td><td>168</td></tr>
+<tr><td><strong>标签</strong></td><td>选填。填 <code>法式,裸色</code>（逗号用<strong>英文逗号</strong>：手机上把输入法切到英文再打）</td><td>法式,裸色</td></tr>
+<tr><td><strong>材料清单</strong></td><td>选填，<strong>每行一项</strong>，只写名字</td><td>底胶&lt;br&gt;法式白</td></tr>
+</tbody></table>
+<ol>
+<li>点「<strong>保存</strong>」</li>
+</ol>
+<p>建好后卡片会显示「90&#x27;」「¥168」，点开能改。</p>
+<blockquote><p>材料清单里<strong>不用写用量</strong>——系统按「这一天有哪些单、每单要哪些料」去和库存比，算出还缺几样。</p></blockquote>
+<h3>想给客人看作品图</h3>
+<p>「款式库」里点「<strong>导出案例图</strong>」：</p>
+<ol>
+<li>可以点标签筛（不选＝所有建好的款，最多 9 款）</li>
+<li>等一下，下面自动出一张<strong>竖版九宫格</strong>预览</li>
+<li>点「<strong>保存图片</strong>」</li>
+</ol>
+<p>iPhone 存进「照片」，安卓一般存进「相册 / Pictures」。图是 1080×1440、带水印，可以直接发朋友圈或小红书。</p>
+<hr>
+<h2>四、建单：3 分钟排进一单</h2>
+<p>在「<strong>今天</strong>」页<strong>右上角</strong>点「<strong>＋ 建一单</strong>」，屏幕下方弹出一个输入面板，从上往下一项项填。</p>
+<p><img alt="建单面板" src="../screenshots/use-create.png"></p>
+<h3>第 1 步：找人</h3>
+<ul>
+<li>在「客户」输入框里输<strong>昵称、短号或手机后四位</strong>，都能搜到</li>
+<li>点中客人就选上了（右边会变成「换一个」）</li>
+<li><strong>第一次来的新客人</strong>：在框里输她的昵称，然后按手机键盘右下角那个键（显示为「<strong>前往</strong>」「<strong>搜索</strong>」「<strong>完成</strong>」或 <code>↵</code>，不同手机不一样）。</li>
+</ul>
+<p>按完这一下，系统就当场给她建好档案。</p>
+<blockquote><p>这是接第一个新客的必经动作。按完没反应，说明昵称还没输进去，或者键盘上那个键是「换行」——换个输入法再试。</p></blockquote>
+<h3>第 2 步：选题</h3>
+<ul>
+<li>点款式卡片选中，<strong>可以点多张</strong></li>
+<li>多选的顺序就是做活的顺序（先做第一张，再做第二张），这叫<strong>连做</strong></li>
+<li>下面的「预计 → 结束」会跟着变，已经算上了缓冲</li>
+</ul>
+<h3>第 3 步：定时间</h3>
+<ul>
+<li><strong>日期</strong>：点日期那一栏会弹出日历，选哪天</li>
+<li><strong>开始时间</strong>：点时间那一栏，上下滚动选时间</li>
+<li><strong>缓冲</strong>：默认 20 分钟，是留给收拾台面、送客的间隙。可以改小，也可以填 0</li>
+<li><strong>占用</strong>：系统自己算（做活时间 + 缓冲），你不用算</li>
+</ul>
+<blockquote><p>缓冲<strong>不建议填 0</strong>：填 0 之后两单紧挨着，前面一拖，后面立刻撞档。</p></blockquote>
+<h3>第 4 步：备注</h3>
+<p>写点有用的：<code>怕深色</code>、<code>带了参考图</code>、<code>加急</code>、<code>朋友介绍</code>。</p>
+<h3>第 5 步：收定金（这单要收才勾）</h3>
+<p>勾上「<strong>同时收定金</strong>」，金额是<strong>设置里定好的</strong>（默认 30 元）。</p>
+<blockquote><p>这个金额<strong>不能在这一单上改</strong>。要改，去「设置 → 营业与规则 → 定金」改全店默认值。</p></blockquote>
+<h3>第 6 步：保存</h3>
+<p>点「<strong>保存</strong>」。面板收起，回到你今天看的那一页。</p>
+<blockquote><p><strong>如果排的是别的日子</strong>：保存后页面还停在今天，看不到那单是正常的。</p><p>点「今天」页上方的「<strong>后一天 ›</strong>」，或者去「<strong>排期</strong>」页翻到那一天。</p></blockquote>
+<h3>如果时间撞了</h3>
+<p>系统会拦住，并告诉你撞上了哪一单：</p>
+<pre><code>撞上的单：15:00 #C003 小满 法式裸粉
+[取消]  [仍然强排（作业单里会标红）]</code></pre>
+<ul>
+<li><strong>大多数情况点「取消」</strong>，换个时间</li>
+<li>确实要接（客人加急、你决定两单并着做），才点「<strong>仍然强排</strong>」。</li>
+</ul>
+<p>强排之后这两单会标红，页面顶部提示「⚠ 2 单时段冲突，已标红」——提醒你自己心里有数</p>
+<hr>
+<h2>五、一天的流程（最常用）</h2>
+<h3>早上：看一眼今天</h3>
+<p>打开「<strong>今天</strong>」，从上往下就是当天的时间表：</p>
+<pre><code>08:30 ─ 空档 可塞 90 分钟     插一单 ↗
+10:00 ─ #C002 阿岚 法式裸粉    已定档     ← 90 分钟活 + 20 缓冲，11:50 结束
+11:50 ─ 空档 可塞 430 分钟    插一单 ↗
+19:00 ─ #C216 橙子 猫眼奶茶    已定档</code></pre>
+<ul>
+<li>「<strong>空档 可塞 N 分钟</strong>」＝ 从上一单结束到下一单开始，中间还剩多久</li>
+<li>空当<strong>够放下一单</strong>时，右边才会出现「<strong>插一单 ↗</strong>」，点它直接建在这个空当里</li>
+<li>最上面四个数字：<strong>单量 / 占用 / 定金 / 待采购</strong></li>
+</ul>
+<p>＝ 今天几单 · 一共占多少分钟 · 定金收了多少 · 还缺几样料</p>
+<p><strong>想看别的日子</strong>：页面上方有「<strong>‹ 前一天</strong>」「<strong>今天</strong>」「<strong>后一天 ›</strong>」，点它们来回翻。</p>
+<h3>客人来了</h3>
+<p>卡片上点「<strong>到店</strong>」，状态从「已定档」变成「已到店」。</p>
+<h3>开始做</h3>
+<p>点「<strong>开始</strong>」，变成「服务中」。</p>
+<h3>做完了</h3>
+<p>点「<strong>完成</strong>」，状态变成「已完成」。</p>
+<blockquote><p><strong>完成 ≠ 收到钱。</strong> 这一步只更新客人的到访记录和「做过的款」。</p><p>尾款要另外去「财务 → 记一笔」记（见第十节）。</p></blockquote>
+<h3>客人没来</h3>
+<p>点「<strong>爽约</strong>」。如果这单收过定金，系统会问你定金怎么办（见下一节）。</p>
+<hr>
+<h2>六、定金：收了以后可能出现的三种结局</h2>
+<p>定金是<strong>锁住这个时间段</strong>用的。收了之后计划有变，只有三种走法。</p>
+<h3>走法一：改期</h3>
+<p>点卡片上的「<strong>改期</strong>」，填「<strong>新的开始时间</strong>」（日期和时间都能改，跨天也行）和「原因」，保存。</p>
+<p>系统会自己判断<strong>要不要扣定金</strong>：</p>
+<table><thead><tr><th>情况</th><th>结果</th></tr></thead><tbody>
+<tr><td>离开始还有 <strong>48 小时以上</strong>，并且<strong>这一单</strong>没用过免费改期</td><td>直接改，不问你</td></tr>
+<tr><td>不足 48 小时，或者这一单的免费改期已经用过</td><td>弹出来让你选下面三个</td></tr>
+</tbody></table>
+<ul>
+<li><strong>退定金并改期</strong>——钱退给客人，时间改成新的（系统记一笔「定金退还」，卡片标签变成 <code>已退</code>）</li>
+<li><strong>没收定金并改期</strong>——钱不退，时间改成新的</li>
+<li><strong>仍然免费改期</strong>——钱不动，时间改成新的（你自己决定这次算了）</li>
+</ul>
+<blockquote><p>「48 小时」可以在「设置 → 营业与规则 → 免费改期阈值」里改。</p><p><strong>免费改期是「每一单各有一次」</strong>；用掉了这一单的，这单再改就要你选上面三个。</p></blockquote>
+<p>改完如果还没告诉客人，排期页的「<strong>待通知清单</strong>」会记着。</p>
+<h3>走法二：取消</h3>
+<p>点「<strong>取消</strong>」，填原因。如果这单收过定金，会问你定金怎么办：</p>
+<ul>
+<li><strong>退还定金</strong>——客人有理（临时生病、你自己有事）</li>
+<li><strong>没收定金</strong>——客人临时放鸽子又不改期</li>
+<li><strong>先不动</strong>——事情还没定，先挂着</li>
+</ul>
+<h3>走法三：爽约</h3>
+<p>点「<strong>爽约</strong>」。爽约通常意味着定金不退（没收），也可以选择退。</p>
+<h3>一句话记住</h3>
+<blockquote><p><strong>定金只在「收」和「退 / 没收」这两个动作时才会动。</strong></p><p>系统不会自动扣、也不会自动退，每一步都要你点。</p></blockquote>
+<hr>
+<h2>七、客户档案</h2>
+<h3>找客人</h3>
+<p>底部点「<strong>客户</strong>」。最上面是搜索框，输<strong>昵称、短号、手机后四位</strong>都能搜到。</p>
+<p><img alt="客户列表" src="../screenshots/use-clients.png"></p>
+<p>列表默认按「<strong>最近到访</strong>」排序——常来的老客在上面。</p>
+<h3>第一次来的客人</h3>
+<p>两种办法：</p>
+<ol>
+<li>建单时直接在搜索框输昵称，<strong>按键盘右下角那个键</strong>，当场建档（最快）</li>
+<li>或者「客户」页<strong>右上角</strong>点「<strong>＋ 新建</strong>」，填：</li>
+</ol>
+<table><thead><tr><th>项目</th><th>说明</th></tr></thead><tbody>
+<tr><td><strong>昵称</strong></td><td>必填。建议带区分词，如「阿岚-长甲」</td></tr>
+<tr><td><strong>手机后四位</strong></td><td>选填</td></tr>
+<tr><td><strong>来源</strong></td><td>选填：小红书 / 朋友介绍 / 路过 / 老客</td></tr>
+<tr><td><strong>常用色号</strong></td><td>选填，但<strong>很值得填</strong>：<code>#E03 裸粉，怕深色</code>、<code>不喜欢亮片</code></td></tr>
+<tr><td><strong>备注</strong></td><td>选填</td></tr>
+</tbody></table>
+<blockquote><p>昵称和已有客人重名时，系统会提示「已有同名客户，建议加个区分词」。</p><p>它<strong>不会拦着你保存</strong>——两个小满很正常。</p></blockquote>
+<h3>看一个客人</h3>
+<p>在列表里点她的名字：</p>
+<p><img alt="客户档案" src="../screenshots/use-client-detail.png"></p>
+<pre><code>#C002  阿岚
+尾号 9911 · 小红书
+
+预约 6    完成 5    做过的款 4
+
+[编辑]  [删除]
+
+做过的款 4
+[法式裸粉 ×2] [猫眼奶茶 ×1] [延长甲 ×1] [手绘小花 ×1]
+
+历史预约 6
+今天     10:00  法式裸粉        ¥168  已定档
+10/28    13:00  猫眼奶茶        ¥138  已完成</code></pre>
+<ul>
+<li>「<strong>做过的款</strong>」——她做过什么，重复做的时候参考</li>
+<li>「<strong>历史预约</strong>」——每次的时间、款式、金额、状态</li>
+</ul>
+<h3>删除客人</h3>
+<p>点「<strong>删除</strong>」，确认框会说明：</p>
+<blockquote><p>删除后客户不再出现在列表和搜索里，但历史预约、定金与流水都会保留，账目不会断。</p></blockquote>
+<p>删掉的只是「这个人」，账不会消失。她的历史单子上会显示成「<strong>客户已删除</strong>」，金额、定金、流水都还在。</p>
+<blockquote><p>删错了没有「撤销」。重新建一个同名客户，<strong>不会</strong>把旧记录接上——新档案是空的，看不到她以前的「做过的款」。</p><p>所以删之前想一下：只是不想再看到，还是真的要清掉。</p></blockquote>
+<hr>
+<h2>八、看整周、插单、往后顺延</h2>
+<h3>看整周</h3>
+<p>底部点「<strong>排期</strong>」，一屏 7 列，看哪天满、哪天有空。上方可以「上周」「下周」。</p>
+<p><img alt="周排期" src="../screenshots/use-week.png"></p>
+<p>点某一天，下面出当天的明细。</p>
+<h3>插单（临时来了个客人）</h3>
+<p>点「<strong>插一单 ↗</strong>」——只有在<strong>空当够长</strong>的时候才会出现这个按钮。 点进去填的跟建单一样，系统会自己检查塞不塞得下。</p>
+<h3>往后顺延（今天做不完了）</h3>
+<p>比如前一个客人拖了 30 分钟，后面几单都要往后挪。</p>
+<ol>
+<li>在<strong>排期页的当天明细</strong>里，找到<strong>要挪的第一单</strong>，点它旁边的「<strong>顺延</strong>」</li>
+</ol>
+<p>（用它当起点，它之前的单不动——已经做完的不会被推走）</p>
+<ol>
+<li>在弹窗里选「挪多久」：30 / 60 分钟，或者「自定义」</li>
+<li>系统先算给你看：<strong>影响 N 单</strong>，确认没问题</li>
+<li>点「<strong>确认顺延</strong>」</li>
+</ol>
+<p>顺延只挪<strong>这一单及其之后</strong>的预约。</p>
+<h3>发完微信记得标记</h3>
+<p>顺延之后会生成一份「<strong>待通知清单</strong>」——因为<strong>系统不会自动通知客人</strong>。</p>
+<ol>
+<li>在<strong>排期页</strong>往下找「<strong>待通知清单</strong>」（标题旁边有数字＝还没发几条）</li>
+<li>点每条右边的「<strong>复制话术</strong>」，切到微信贴出去</li>
+<li>发完回来点「<strong>已发微信</strong>」，这条就从清单里消失</li>
+</ol>
+<hr>
+<h2>九、材料：今天要买什么、这单用了什么</h2>
+<h3>今天要买什么</h3>
+<p>顶部点「<strong>物料</strong>」，最上面一块：</p>
+<p><img alt="物料页" src="../screenshots/use-materials.png"></p>
+<pre><code>今天还要备 2 样料
+按当天预约的款式清单算</code></pre>
+<p>它会看<strong>今天所有预约</strong>用到的款式材料，再和你的<strong>库存</strong>比：</p>
+<table><thead><tr><th>显示</th><th>意思</th></tr></thead><tbody>
+<tr><td>要 1 · 存 0 · 缺 1</td><td>今天要用 1 样，库存没有，<strong>得买</strong></td></tr>
+<tr><td>要 2 · 存 5</td><td>够用</td></tr>
+<tr><td>右边标「齐了」</td><td>够，而且已经备好</td></tr>
+</tbody></table>
+<blockquote><p>前提是<strong>款式里填了「材料清单」</strong>。没填的话这里会提示：</p><p>「今天的款式没登记材料清单 → 在「款式库」里给款式填上材料」。</p></blockquote>
+<h3>记这单用了什么料</h3>
+<p><strong>不用去物料页</strong>。在「今天」页找到那一单，点卡片上的「<strong>料 未领</strong>」：</p>
+<ol>
+<li>选物料（会显示库存还剩多少）</li>
+<li>填数量</li>
+<li>确认</li>
+</ol>
+<p>系统会<strong>当场扣库存</strong>，并记下这单的材料成本（算进支出）。标签随即变成「<strong>料 已领 2</strong>」，点它还能再补。</p>
+<blockquote><p><strong>注意</strong>：这个面板只能<strong>选已经建好的物料</strong>，不能在这里新建。</p><p>新买的胶还没录进系统？先去「物料 → 右上角 ＋ 新建」录一条，再回来领。</p><p>赞助来的材料（品牌送你用的），成本记 0，但可以填「赞助商」和「赞助价值」——账上不把送的算成花钱。</p></blockquote>
+<h3>管库存</h3>
+<p>「物料」页下半部分是库存列表，可以按采购状态筛：待采购 / 已下单 / 在途 / 已到货 / 已备好。</p>
+<p>点任何一个能改：名称、单位、单位成本、是否赞助、赞助商、赞助价值、采购状态、备注。</p>
+<hr>
+<h2>十、算账</h2>
+<p>顶部点「<strong>财务</strong>」。</p>
+<p><img alt="财务页" src="../screenshots/use-finance.png"></p>
+<h3>每个月的样子</h3>
+<pre><code>2026 年 11 月 · 净收入 ¥109.50
+收入 168 | 支出 58.50 | 净收入 109.50 | 定金没收 0
+✓ 明细求和与汇总一致</code></pre>
+<table><thead><tr><th>数字</th><th>意思</th></tr></thead><tbody>
+<tr><td><strong>收入</strong></td><td>这个月收到的钱（尾款等）</td></tr>
+<tr><td><strong>支出</strong></td><td>这个月花出去的钱（买材料等）</td></tr>
+<tr><td><strong>净收入</strong></td><td>收入 − 支出</td></tr>
+<tr><td><strong>定金没收</strong></td><td>这个月没收的定金总额（<strong>定金单独一本账，不算进收入</strong>）</td></tr>
+</tbody></table>
+<blockquote><p><strong>为什么我微信真收了 30 块定金，收入却是 0？</strong></p><p>因为定金不是收入，它可能还要退回去。定金单独记在「定金」那本账里，只有「没收」的才计入本月那个「定金没收」数字。</p><p>真正的收入是<strong>你做完活收的尾款</strong>。</p></blockquote>
+<p>那行「<strong>明细求和与汇总一致</strong>」是系统自己核对的：</p>
+<ul>
+<li>一致 → 出现 ✓，正常</li>
+<li>出现「<strong>汇总与明细不一致</strong>」→ 有数据对不上，<strong>别慌</strong>，先记下是哪个月，找装系统的人看</li>
+</ul>
+<h3>记一笔</h3>
+<p>点「<strong>＋ 记一笔</strong>」：</p>
+<table><thead><tr><th>项目</th><th>说明</th></tr></thead><tbody>
+<tr><td><strong>方向</strong></td><td>收入 / 支出</td></tr>
+<tr><td><strong>类别</strong></td><td>收入：服务收入、其他　支出：物料支出、其他</td></tr>
+<tr><td><strong>金额</strong></td><td>数字</td></tr>
+<tr><td><strong>日期</strong></td><td>默认今天。<strong>补记以前的就改成那一天</strong>，它会算进那个月</td></tr>
+<tr><td><strong>备注</strong></td><td>写清楚：<code>阿岚 尾款</code>、<code>补两瓶胶</code></td></tr>
+</tbody></table>
+<blockquote><p><strong>做完一单记得来记尾款。</strong> 系统不会因为你点了「完成」就自动算收入——实际收了多少钱，只有你知道。</p></blockquote>
+<h3>三本账</h3>
+<p>往下是三条明细：<strong>收入 / 支出 / 定金</strong>，分开记。有对应预约的，点一下能跳回那天。</p>
+<h3>导出（交给会计）</h3>
+<p>「设置 → 导出」，三个按钮：</p>
+<table><thead><tr><th>按钮</th><th>里面是什么</th></tr></thead><tbody>
+<tr><td><strong>客户 CSV</strong></td><td>所有客人的档案</td></tr>
+<tr><td><strong>预约 CSV</strong></td><td>所有预约（含日期、金额、状态）</td></tr>
+<tr><td><strong>流水 CSV</strong></td><td>所有收支和定金 ← <strong>给会计用这个</strong></td></tr>
+</tbody></table>
+<p>下载下来用 Excel / WPS 打开就是表格。</p>
+<blockquote><p>导出的是<strong>全部历史</strong>，不是某一个月。要某个月的，在 Excel 里按「日期」那一列筛一下。</p></blockquote>
+<hr>
+<h2>十一、每天三组要发的微信</h2>
+<p>「今天」页最下面有个折叠区「<strong>今天要发的提醒</strong>」，点开：</p>
+<p><img alt="提醒" src="../screenshots/use-reminders.png"></p>
+<pre><code>昨日未确认 1
+  昨天 10:00  #C002 阿岚
+  Hi 阿岚，昨天 10:00 的档期没等到你，还好吗？想改天的话我帮你重新排～
+  [复制话术]
+
+今天 2
+  今天 15:00  #C003 小满
+  Hi 小满，提醒一下今天 15:00 到店做法式裸粉，档期给你留着…
+  [复制话术]
+
+明天 1
+  明天 11:00  #C005 橙子
+  Hi 橙子，明天 11:00 的档期先给你留着，定金 30 转我，这个时间就给你留死～</code></pre>
+<table><thead><tr><th>组</th><th>是谁</th><th>为什么要发</th></tr></thead><tbody>
+<tr><td><strong>昨日未确认</strong></td><td>昨天没到、也没取消的客人</td><td>问一句「还好吗」，顺便改约，别丢客户</td></tr>
+<tr><td><strong>今天</strong></td><td>今天还没到店的</td><td>提醒到店。已过点的，话术自动变成「现在过来还来得及」</td></tr>
+<tr><td><strong>明天</strong></td><td>明天有约的</td><td>提前确认，<strong>还没交定金的尤其要发</strong>（话术自动带定金金额）</td></tr>
+</tbody></table>
+<p>用法就一步：点「<strong>复制话术</strong>」，切到微信粘贴发出去。</p>
+<blockquote><p>系统只帮你把话说好，<strong>发还是要你自己发</strong>。</p></blockquote>
+<hr>
+<h2>十二、改自己的账号和密码</h2>
+<p>顶部「<strong>设置</strong>」→ 最上面「<strong>账号</strong>」。</p>
+<table><thead><tr><th>想改</th><th>怎么做</th></tr></thead><tbody>
+<tr><td>登录名</td><td>填「新登录名」</td></tr>
+<tr><td>密码</td><td>填「新密码」+「确认新密码」（至少 8 位）</td></tr>
+</tbody></table>
+<p><strong>当前密码一定要填</strong>，这是防止别人拿你手机直接改掉。</p>
+<p>改完系统会<strong>自动退回登录页</strong>。请立刻用新账号密码登录一次，登上了再关掉这一页。</p>
+<blockquote><p>忘了密码自己救不回来，需要有人在服务器上改。所以：改密码那天，把它记在你平时记东西的地方。</p></blockquote>
+<hr>
+<h2>十三、手机和电脑</h2>
+<p><strong>同一套东西</strong>，手机上也能用，电脑上会更宽。</p>
+<table><thead><tr><th>手机（竖着拿）</th><th>电脑（窗口拉宽）</th></tr></thead><tbody>
+<tr><td>底部三个入口：今天 / 排期 / 客户</td><td>同样的三个，在标题栏那一行</td></tr>
+<tr><td>二级页面左上角「← 返回」</td><td>同上</td></tr>
+<tr><td>一屏一屏往下翻</td><td>列表自动变成多列</td></tr>
+</tbody></table>
+<hr>
+<h2>十四、出问题了怎么办</h2>
+<table><thead><tr><th>你遇到的</th><th>怎么办</th></tr></thead><tbody>
+<tr><td>打不开网页</td><td>换 WiFi / 流量再试；还不行，找装系统的人看服务是不是停了</td></tr>
+<tr><td>登录说「用户名或密码错误」</td><td>检查是不是大写键开了；确认最近有没有改过密码</td></tr>
+<tr><td>登录说「尝试太频繁」</td><td>连错太多次被保护了，<strong>等 1 分钟</strong>再登</td></tr>
+<tr><td>突然退回登录页</td><td>登录状态过期了，重新登录即可，数据没丢</td></tr>
+<tr><td>建单时提示「撞上的单」</td><td>换个时间；确定要接就点「仍然强排」</td></tr>
+<tr><td>点保存没反应</td><td>检查有没有必填项没填（客户没选、时间没填）</td></tr>
+<tr><td>空当里没有「插一单」按钮</td><td>空当太短，放不下你现在要做的款</td></tr>
+<tr><td>「今天要买什么」是空的</td><td>款式里没登记材料清单，去款式库补</td></tr>
+<tr><td>领料时选不到物料</td><td>库存里还没有这条，先去「物料 → ＋ 新建」录一条</td></tr>
+<tr><td>卡片上的「开始」「完成」不见了</td><td>按钮<strong>按阶段出现</strong>：先点「到店」才有「开始」，点「开始」才有「完成」</td></tr>
+<tr><td>建完单找不到那一单</td><td>看看是不是排到别的日子了：点「后一天」，或去「排期」页翻到那天</td></tr>
+<tr><td>记错了金额 / 时间</td><td>改期、取消都能重做；但<strong>没有「撤销」</strong>，点之前看一眼</td></tr>
+<tr><td>页面显示「客户已删除」</td><td>这个客人被删过了，历史账还在；想继续用就重新建一个</td></tr>
+<tr><td>数据好像没了</td><td>先翻到正确的日期看看；真没有就找装系统的人（服务器每天凌晨自动备份）</td></tr>
+<tr><td>忘了密码</td><td>只能让人在服务器上改，找装系统的人</td></tr>
+</tbody></table>
+<hr>
+<h2>十五、一页速查（建议截图存手机）</h2>
+<pre><code>【建一单】
+今天 → ＋ 建一单 → 搜客户（新客输名字按键盘右下角那个键）
+→ 点款式（可多选＝连做）→ 选日期时间 → 勾「同时收定金」→ 保存
+
+【客人来了 / 做完】
+点「到店」→ 点「开始」→ 点「完成」
+（做完别忘了：财务 → ＋ 记一笔 → 收入）
+
+【改时间】
+卡片点「改期」→ 选新日期时间 + 原因
+· 48 小时以上且这一单没用过免费改期：直接改
+· 否则要选：退定金并改期 / 没收定金并改期 / 仍然免费改期
+
+【取消 / 爽约】
+卡片点「取消」或「爽约」→ 定金：退还 / 没收 / 先不动
+
+【今天做不完】
+排期 → 当天明细里点第一单的「顺延」→ 选挪多久 → 确认顺延
+→ 排期页「待通知清单」逐个复制话术 → 发完点「已发微信」
+
+【每天发微信】
+今天页最下面「今天要发的提醒」→ 复制话术 → 微信粘贴
+
+【材料】
+今天要买什么：物料页最上面
+这单用了什么：今天页卡片点「料 未领」
+
+【月底】
+财务页看收入 / 支出 / 净收入
+要表格：设置 → 导出 → 流水 CSV（给会计用这个）</code></pre>
+<hr>
+<h2>附录：名词对照</h2>
+<table><thead><tr><th>系统里写的</th><th>其实就是</th></tr></thead><tbody>
+<tr><td>短号</td><td>系统给客人编的号（如 #C002），搜人时能用的三个东西之一</td></tr>
+<tr><td>已定档</td><td>约好了，人还没来</td></tr>
+<tr><td>待定金 / 定金 未收</td><td>约好了、定金还没收到（状态写「待定金」，标签写「未收」，是同一件事）</td></tr>
+<tr><td>定金 已收</td><td>定金收到了</td></tr>
+<tr><td>定金 已退</td><td>定金退给客人了</td></tr>
+<tr><td>定金 已没收</td><td>客人没来 / 临时取消，定金按约定不退</td></tr>
+<tr><td>已到店 / 服务中</td><td>人来了 / 开始做了</td></tr>
+<tr><td>已完成</td><td>做完、下台了（<strong>不代表收钱</strong>）</td></tr>
+<tr><td>已取消</td><td>单子撤了，档期让出来，账还在</td></tr>
+<tr><td>爽约</td><td>没来，也没提前说</td></tr>
+<tr><td>空档 / 可塞 N 分钟</td><td>这段时间空着，还能做多长的活</td></tr>
+<tr><td>缓冲</td><td>两单之间留的收拾时间（默认 20 分钟）</td></tr>
+<tr><td>占用</td><td>这一单总共占多少时间（活 + 缓冲），单位是分钟</td></tr>
+<tr><td>连做</td><td>一单里做两个以上的款</td></tr>
+<tr><td>插单 / 插一单</td><td>临时塞进空当里的一单</td></tr>
+<tr><td>顺延</td><td>从某一单开始，后面整体往后挪</td></tr>
+<tr><td>强排</td><td>明知撞档还要接，系统会标红提醒</td></tr>
+<tr><td>待通知清单</td><td>改过时间、但还没告诉客人的名单（在排期页）</td></tr>
+<tr><td>作业单</td><td>就是「今天」那一页的排期表</td></tr>
+<tr><td>免费改期阈值</td><td>距离开始多少小时以上算「免费改期」，默认 48 小时</td></tr>
+<tr><td>净收入</td><td>收入减掉支出</td></tr>
+<tr><td>在途 / 已备好</td><td>料在路上 / 料已经准备好放着</td></tr>
+<tr><td>赞助价值</td><td>品牌送你的材料大概值多少钱（记着好看，不算花钱）</td></tr>
+<tr><td>明细求和与汇总一致</td><td>系统把每笔钱加起来，和月度总数对了一遍，结果一样</td></tr>
+<tr><td>流水</td><td>一笔一笔的钱进钱出记录</td></tr>
+<tr><td>导出 CSV</td><td>导出成 Excel / WPS 能打开的表格</td></tr>
+</tbody></table>
+<hr>
+<blockquote><p>这份说明只讲「怎么用」。服务器的安装、备份、换机器这些事，由装系统的人照另一套文档处理，不用你操心。</p></blockquote>
+</body>
+</html>

@@ -107,12 +107,25 @@ const tabCounts = computed(() => ({
   deposit: deposits.value.length
 }))
 
+/** 今天的 YYYY-MM-DD，给「记一笔」的日期框做默认值 */
+function todayKey() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 当天的 HH:mm:ss */
+function nowClock() {
+  const d = new Date()
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':')
+}
+
 function openRecord() {
   form.value = {
     direction: tab.value === 'expense' ? 'OUT' : 'IN',
     category: tab.value === 'expense' ? 'MATERIAL' : 'SERVICE',
     amount: '',
-    remark: ''
+    remark: '',
+    date: todayKey()
   }
   recordVisible.value = true
 }
@@ -129,6 +142,8 @@ async function submitRecord() {
       direction: form.value.direction,
       category: form.value.category,
       amount,
+      // 允许补记：选哪天就记到哪天（钟点用当前时间，只影响同一天内的排序）
+      happenedAt: `${form.value.date || todayKey()} ${nowClock()}`,
       remark: form.value.remark.trim() || undefined
     })
     ElMessage.success('已记账')
@@ -259,6 +274,11 @@ function jumpToBooking(row) {
       <section class="field">
         <div class="field-head"><span class="field-label">金额</span><span class="field-hint">元</span></div>
         <input v-model="form.amount" class="input" type="number" min="0" step="10" placeholder="168" />
+      </section>
+
+      <section class="field">
+        <div class="field-head"><span class="field-label">日期</span><span class="field-hint">补记以前的就选那天</span></div>
+        <input v-model="form.date" class="input" type="date" />
       </section>
 
       <section class="field">

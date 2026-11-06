@@ -1,4 +1,4 @@
-# 单人美甲工作室版 · V0.8.4
+# 单人美甲工作室版 · V0.8.5
 
 > 单人版的「档期 + 现金流」台账。老板 = 美甲师 = 唯一使用者。
 > 分支 `feat/solo-studio`；答辩版本在 `main`。
@@ -27,6 +27,7 @@
 | [P8-验收清单.md](P8-验收清单.md) | 十条逐项「通过/不通过 + 证据」 |
 | [DEPLOY.md](DEPLOY.md) | 部署到自己的服务器、日常发布与找回密码 |
 | [OPS.md](OPS.md) | 运维手册：日常命令、备份恢复、巡检、故障处理、安全基线 |
+| [使用说明书-美甲师.md](使用说明书-美甲师.md) | **给老板本人看的**：小白版操作说明（附 PDF），不含任何技术内容 |
 | [REVIEW-V0.8.0.md](REVIEW-V0.8.0.md) | 安全 / 功能 / 接口规范 / 注释 四角度代码审查 |
 | [CHANGELOG](../../CHANGELOG.md) | 版本记录 |
 
@@ -81,7 +82,7 @@ npm run dev              # http://localhost:5173
 - 前端：Vue 3 / Vite / Element Plus / Pinia / Vue Router
 - 与多角色版共用同一仓库与设计系统（`frontend/src/styles/tokens.css`），业务代码在 `com.nail.demo.solo`、`views/solo`、`components/solo` 下
 
-V0.8.4 包含 P1–P8 全部阶段：数据模型、接口与规则、作业单、排期与插队、客户与款式、
+V0.8.5 包含 P1–P8 全部阶段：数据模型、接口与规则、作业单、排期与插队、客户与款式、
 物料与财务、提醒与设置，以及十条逐项验收。
 
 ## 已知限制
