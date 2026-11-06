@@ -260,6 +260,7 @@ UPDATE sys_user SET password = '新密码', token_version = token_version + 1 WH
 | 重启后密码又变回 123456 | `spring.sql.init.mode` 还是 `always`，见第 6 节第 3 步 |
 | 时间对不上 | 数据库连接串与容器时区都要是 `Asia/Shanghai` |
 | 手机端排版紧 | 断点在 900px；再窄的分辨率（<360px）会进入紧凑样式 |
+| SSH 里打字像「多打了字」/卡顿 | 服务器 root 的 zsh 加载了 `zsh-syntax-highlighting` 与 `zsh-autosuggestions`：每按一个键都要退格重画整行并上色，远程连接下看起来就是字被重复、光标乱跳。已把 `/root/.zshrc` 精简为无插件版本（原文件备份在 `/root/.zshrc.plugins.bak`）。若仍异常，查本地终端的「本地回显 / Local echo」是否被打开（双重回显才会每个字符出现两次） |
 
 ## 10. 上线检查清单
 
