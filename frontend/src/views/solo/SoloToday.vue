@@ -14,6 +14,7 @@ import SoloSheet from '../../components/solo/SoloSheet.vue'
 import BookingCard from '../../components/solo/BookingCard.vue'
 import BookingCreateSheet from '../../components/solo/BookingCreateSheet.vue'
 import RescheduleSheet from '../../components/solo/RescheduleSheet.vue'
+import MaterialUsageSheet from '../../components/solo/MaterialUsageSheet.vue'
 import * as api from '../../api/solo'
 import { addDays, formatMoney, minutesOf, timeText, toKey } from '../../utils/date'
 
@@ -47,6 +48,8 @@ const actionDecision = ref('REFUND')
 
 const remindersOpen = ref(false)
 const acting = ref(false)
+const usageVisible = ref(false)
+const usageTarget = ref(null)
 
 // ------------------------------------------------------------------ 数据
 
@@ -233,6 +236,15 @@ async function copyText(text) {
 function openCreate(time = '') {
   presetTime.value = time
   createVisible.value = true
+}
+
+function openMaterials(booking) {
+  usageTarget.value = booking
+  usageVisible.value = true
+}
+
+async function handleUsageChanged() {
+  await load()
 }
 
 function openReschedule(booking) {
@@ -437,6 +449,7 @@ const weekdayText = computed(() => {
             @reschedule="handleCardAction(segment.booking, 'reschedule')"
             @cancel="handleCardAction(segment.booking, 'cancel')"
             @no-show="handleCardAction(segment.booking, 'no-show')"
+            @materials="openMaterials(segment.booking)"
           />
         </div>
       </div>
@@ -480,6 +493,13 @@ const weekdayText = computed(() => {
       :styles="styles"
       @update:visible="createVisible = $event"
       @created="handleCreated"
+    />
+
+    <MaterialUsageSheet
+      :visible="usageVisible"
+      :booking="usageTarget"
+      @update:visible="usageVisible = $event"
+      @changed="handleUsageChanged"
     />
 
     <RescheduleSheet

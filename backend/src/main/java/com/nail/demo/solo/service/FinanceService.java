@@ -20,6 +20,7 @@ import com.nail.demo.solo.dto.FinanceSummaryResponse;
 import com.nail.demo.solo.dto.MoneyFlowRequest;
 import com.nail.demo.solo.dto.MoneyFlowResponse;
 import com.nail.demo.solo.entity.Booking;
+import com.nail.demo.solo.entity.DepositFlow;
 import com.nail.demo.solo.entity.Client;
 import com.nail.demo.solo.entity.MoneyFlow;
 import com.nail.demo.solo.repository.BookingRepository;
@@ -73,6 +74,8 @@ public class FinanceService {
                 .depositForfeited(depositSums.getOrDefault(SoloDepositFlowType.FORFEIT, BigDecimal.ZERO))
                 .detailIncome(detailIncome)
                 .detailExpense(detailExpense)
+                .incomeDiff(income.subtract(detailIncome))
+                .expenseDiff(expense.subtract(detailExpense))
                 .balanced(income.compareTo(detailIncome) == 0 && expense.compareTo(detailExpense) == 0)
                 .build();
     }
@@ -109,6 +112,7 @@ public class FinanceService {
                     .amount(flow.getAmount())
                     .happenedAt(flow.getHappenedAt())
                     .bookingId(flow.getBookingId())
+                    .bookingStartAt(booking == null ? null : booking.getStartAt())
                     .clientCode(client == null ? null : client.getCode())
                     .clientNickname(client == null ? null : client.getNickname())
                     .remark(flow.getRemark())
@@ -116,11 +120,39 @@ public class FinanceService {
         }).toList();
     }
 
-    /** 定金明细（第三本账）。 */
+    /** 定金明细（第三本账）：带上预约时间与客户，能跳回预约。 */
     @Transactional(readOnly = true)
     public List<DepositResponse> deposits(String month) {
         YearMonth yearMonth = resolveMonth(month);
-        return depositService.flows(yearMonth.atDay(1).atStartOfDay(), yearMonth.plusMonths(1).atDay(1).atStartOfDay());
+        LocalDateTime from = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime to = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
+
+        List<DepositFlow> flows = depositFlowRepository.findByHappenedAtBetweenOrderByHappenedAtAsc(from, to);
+        if (flows.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Booking> bookings = bookingRepository.findAllById(flows.stream()
+                        .map(DepositFlow::getBookingId).distinct().toList())
+                .stream().collect(Collectors.toMap(Booking::getId, Function.identity()));
+        Map<Long, Client> clients = clientRepository.findAllById(bookings.values().stream()
+                        .map(Booking::getClientId).distinct().toList())
+                .stream().collect(Collectors.toMap(Client::getId, Function.identity()));
+
+        return flows.stream().map(flow -> {
+            Booking booking = bookings.get(flow.getBookingId());
+            Client client = booking == null ? null : clients.get(booking.getClientId());
+            return DepositResponse.builder()
+                    .id(flow.getId())
+                    .bookingId(flow.getBookingId())
+                    .type(flow.getType())
+                    .amount(flow.getAmount())
+                    .happenedAt(flow.getHappenedAt())
+                    .reason(flow.getReason())
+                    .bookingStartAt(booking == null ? null : booking.getStartAt())
+                    .clientCode(client == null ? null : client.getCode())
+                    .clientNickname(client == null ? null : client.getNickname())
+                    .build();
+        }).toList();
     }
 
     /** 记一笔收支。物料支出、尾款收入都走这里。 */

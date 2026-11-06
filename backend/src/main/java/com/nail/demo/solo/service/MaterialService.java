@@ -2,24 +2,35 @@ package com.nail.demo.solo.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nail.demo.exception.BusinessException;
+import com.nail.demo.solo.common.SoloBookingStatus;
 import com.nail.demo.solo.common.SoloPurchaseStatus;
+import com.nail.demo.solo.dto.MaterialNeedResponse;
 import com.nail.demo.solo.dto.MaterialResponse;
 import com.nail.demo.solo.dto.MaterialSaveRequest;
 import com.nail.demo.solo.dto.MaterialUsageRequest;
 import com.nail.demo.solo.dto.MaterialUsageResponse;
 import com.nail.demo.solo.entity.Booking;
+import com.nail.demo.solo.entity.BookingItem;
 import com.nail.demo.solo.entity.MaterialItem;
 import com.nail.demo.solo.entity.MaterialUsage;
+import com.nail.demo.solo.entity.Style;
+import com.nail.demo.solo.repository.BookingItemRepository;
 import com.nail.demo.solo.repository.BookingRepository;
 import com.nail.demo.solo.repository.MaterialItemRepository;
 import com.nail.demo.solo.repository.MaterialUsageRepository;
+import com.nail.demo.solo.repository.StyleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +46,9 @@ public class MaterialService {
     private final MaterialItemRepository materialItemRepository;
     private final MaterialUsageRepository materialUsageRepository;
     private final BookingRepository bookingRepository;
+    private final BookingItemRepository bookingItemRepository;
+    private final StyleRepository styleRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<MaterialResponse> list(String status, String keyword) {
@@ -47,6 +61,93 @@ public class MaterialService {
             items = materialItemRepository.findAllByOrderByNameAsc();
         }
         return items.stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * 今天要买的料：当天所有预约的款式材料清单按名字聚合，再和库存对一遍。
+     *
+     * <p>缺口 = 需要 − 库存；库存里都没建过这个物料，也算缺。
+     */
+    @Transactional(readOnly = true)
+    public List<MaterialNeedResponse> needsOfDay(LocalDate date) {
+        List<Long> bookingIds = bookingRepository
+                .findByStartAtBetweenOrderByStartAtAsc(date.atStartOfDay(), date.plusDays(1).atStartOfDay())
+                .stream()
+                .filter(booking -> !SoloBookingStatus.CANCELLED.equals(booking.getStatus())
+                        && !SoloBookingStatus.NO_SHOW.equals(booking.getStatus()))
+                .map(Booking::getId)
+                .toList();
+        if (bookingIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<BookingItem> items = bookingItemRepository.findByBookingIdInOrderBySeqAsc(bookingIds);
+        Map<Long, Style> styles = styleRepository.findAllById(items.stream()
+                        .map(BookingItem::getStyleId).filter(java.util.Objects::nonNull).distinct().toList())
+                .stream().collect(Collectors.toMap(Style::getId, Function.identity()));
+
+        Map<String, BigDecimal> need = new LinkedHashMap<>();
+        for (BookingItem item : items) {
+            Style style = item.getStyleId() == null ? null : styles.get(item.getStyleId());
+            if (style == null || !StringUtils.hasText(style.getMaterialJson())) {
+                continue;
+            }
+            for (MaterialLine line : parseMaterial(style.getMaterialJson())) {
+                need.merge(line.name(), BigDecimal.valueOf(line.qty()), BigDecimal::add);
+            }
+        }
+        if (need.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, MaterialItem> inventory = materialItemRepository.findAllByOrderByNameAsc().stream()
+                .collect(Collectors.toMap(MaterialItem::getName, Function.identity(), (a, b) -> a));
+
+        List<MaterialNeedResponse> result = new ArrayList<>();
+        need.forEach((name, qty) -> {
+            MaterialItem material = inventory.get(name);
+            BigDecimal stock = material == null || material.getQuantity() == null
+                    ? BigDecimal.ZERO : material.getQuantity();
+            BigDecimal shortfall = qty.subtract(stock).max(BigDecimal.ZERO);
+            boolean ready = material != null
+                    && SoloPurchaseStatus.READY.equals(material.getPurchaseStatus())
+                    && shortfall.signum() == 0;
+            result.add(MaterialNeedResponse.builder()
+                    .name(name)
+                    .needQty(qty)
+                    .materialId(material == null ? null : material.getId())
+                    .unit(material == null ? null : material.getUnit())
+                    .stockQty(stock)
+                    .shortfall(shortfall)
+                    .purchaseStatus(material == null ? null : material.getPurchaseStatus())
+                    .sponsored(material == null ? null : material.getSponsored())
+                    .ready(ready)
+                    .build());
+        });
+        result.sort((a, b) -> b.getShortfall().compareTo(a.getShortfall()));
+        return result;
+    }
+
+    /** 材料清单 JSON：[{name, qty}]；解析失败就当没有，不影响排期。 */
+    private List<MaterialLine> parseMaterial(String json) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            List<MaterialLine> lines = new ArrayList<>();
+            if (root.isArray()) {
+                for (JsonNode node : root) {
+                    String name = node.path("name").asText("").trim();
+                    if (!name.isEmpty()) {
+                        lines.add(new MaterialLine(name, node.path("qty").asDouble(1)));
+                    }
+                }
+            }
+            return lines;
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private record MaterialLine(String name, double qty) {
     }
 
     @Transactional

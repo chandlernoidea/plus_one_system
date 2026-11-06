@@ -1,14 +1,17 @@
 package com.nail.demo.solo.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.nail.demo.common.ApiResponse;
+import com.nail.demo.solo.dto.MaterialNeedResponse;
 import com.nail.demo.solo.dto.MaterialResponse;
 import com.nail.demo.solo.dto.MaterialSaveRequest;
 import com.nail.demo.solo.dto.PurchaseStatusRequest;
 import com.nail.demo.solo.service.MaterialService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +32,13 @@ public class SoloMaterialController {
     public ApiResponse<List<MaterialResponse>> list(@RequestParam(required = false) String status,
                                                     @RequestParam(required = false) String keyword) {
         return ApiResponse.success(materialService.list(status, keyword));
+    }
+
+    /** 今天要买的料：当天预约的款式材料清单聚合后与库存对比。 */
+    @GetMapping("/todo")
+    public ApiResponse<List<MaterialNeedResponse>> todo(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+        return ApiResponse.success(materialService.needsOfDay(date == null ? LocalDate.now() : date));
     }
 
     @PostMapping

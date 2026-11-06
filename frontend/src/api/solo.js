@@ -114,6 +114,43 @@ export function fetchBookingMaterials(id) {
   return request.get(`/solo/bookings/${id}/materials`)
 }
 
+export function addBookingMaterial(id, data) {
+  return request.post(`/solo/bookings/${id}/materials`, data)
+}
+
 export function fetchMaterials(params = {}) {
   return request.get('/solo/materials', { params })
+}
+
+export function fetchMaterialTodo(date) {
+  return request.get('/solo/materials/todo', { params: { date } })
+}
+
+export function createMaterial(data) {
+  return request.post('/solo/materials', data)
+}
+
+export function updateMaterial(id, data) {
+  return request.put(`/solo/materials/${id}`, data)
+}
+
+export function updateMaterialStatus(id, status) {
+  return request.post(`/solo/materials/${id}/purchase-status`, { status })
+}
+
+// ---------------------------------------------------------------- 财务
+export function fetchFinanceSummary(month) {
+  return request.get('/solo/finance/summary', { params: { month } })
+}
+
+export function fetchFinanceFlows(month, direction) {
+  return request.get('/solo/finance/flows', { params: { month, direction } })
+}
+
+export function fetchFinanceDeposits(month) {
+  return request.get('/solo/finance/deposits', { params: { month } })
+}
+
+export function recordMoneyFlow(data) {
+  return request.post('/solo/finance/flows', data)
 }

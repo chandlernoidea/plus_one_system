@@ -10,6 +10,7 @@ import SoloSchedule from '../views/solo/SoloSchedule.vue'
 import SoloClients from '../views/solo/SoloClients.vue'
 import SoloClientDetail from '../views/solo/SoloClientDetail.vue'
 import SoloStyles from '../views/solo/SoloStyles.vue'
+import SoloMaterials from '../views/solo/SoloMaterials.vue'
 import SoloFinance from '../views/solo/SoloFinance.vue'
 
 /** 免登录页面：单人版专用登录 + 多角色演示登录 */
@@ -92,6 +93,12 @@ const router = createRouter({
       path: '/solo/styles',
       name: 'SoloStyles',
       component: SoloStyles,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/materials',
+      name: 'SoloMaterials',
+      component: SoloMaterials,
       meta: { role: 'ADMIN' }
     },
     {

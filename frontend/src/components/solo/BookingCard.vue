@@ -16,7 +16,16 @@ const props = defineProps({
   conflicting: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['arrive', 'start', 'complete', 'reschedule', 'cancel', 'no-show', 'deposit'])
+const emit = defineEmits([
+  'arrive',
+  'start',
+  'complete',
+  'reschedule',
+  'cancel',
+  'no-show',
+  'deposit',
+  'materials'
+])
 
 const STATUS = {
   WAIT_DEPOSIT: { label: '待定金', tone: 'wait' },
@@ -122,7 +131,7 @@ function hideCover() {
 
       <div class="chips">
         <span class="chip">定金 {{ depositLabel }}</span>
-        <span class="chip">料 {{ usageLabel }}</span>
+        <button type="button" class="chip chip-btn" @click.stop="emit('materials')">料 {{ usageLabel }}</button>
         <span class="chip" v-if="multi">连做 {{ items.length }} 项</span>
         <span class="chip" v-if="booking.source === 'JUMP'">插队</span>
         <span class="chip mono">{{ totalMinutes }} 分钟 · {{ formatMoney(totalPrice, { sign: true }) }}</span>
@@ -301,6 +310,17 @@ function hideCover() {
 .chip-conflict {
   border-color: var(--lacquer);
   color: var(--lacquer-deep);
+}
+
+.chip-btn {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+
+.chip-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .chip {

@@ -25,6 +25,9 @@ public class MoneyFlowResponse {
 
     private Long bookingId;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime bookingStartAt;
+
     /** 可回跳预约：带上客户短号与昵称。 */
     private String clientCode;
     private String clientNickname;
