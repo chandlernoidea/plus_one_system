@@ -455,12 +455,14 @@ public class BookingService {
             Client client = clients.get(booking.getClientId());
             List<BookingItem> bookingItems = items.getOrDefault(booking.getId(), List.of());
             DepositLedger ledger = ledgers.getOrDefault(booking.getId(), DepositLedger.empty());
+            // 客户被软删除后，历史预约仍要能看：短号留着，昵称换掉，避免满屏真名
+            boolean clientDeleted = client == null || Integer.valueOf(1).equals(client.getDeleted());
             return BookingResponse.builder()
                     .id(booking.getId())
                     .clientId(booking.getClientId())
                     .clientCode(client == null ? null : client.getCode())
-                    .clientNickname(client == null ? "客户已删除" : client.getNickname())
-                    .clientDeleted(client == null || Integer.valueOf(1).equals(client.getDeleted()))
+                    .clientNickname(clientDeleted ? "客户已删除" : client.getNickname())
+                    .clientDeleted(clientDeleted)
                     .startAt(booking.getStartAt())
                     .endAt(booking.getEndAt())
                     .plannedMinutes(booking.getPlannedMinutes())
