@@ -39,9 +39,37 @@ export function createClient(data) {
   return request.post('/solo/clients', data)
 }
 
+export function updateClient(id, data) {
+  return request.put(`/solo/clients/${id}`, data)
+}
+
+export function deleteClient(id) {
+  return request.delete(`/solo/clients/${id}`)
+}
+
+export function fetchClientDetail(id) {
+  return request.get(`/solo/clients/${id}/detail`)
+}
+
+export function checkClientName(nickname) {
+  return request.get('/solo/clients/check-name', { params: { nickname } })
+}
+
 // ---------------------------------------------------------------- 款式
 export function fetchStyles(params = {}) {
   return request.get('/solo/styles', { params })
+}
+
+export function createStyle(data) {
+  return request.post('/solo/styles', data)
+}
+
+export function updateStyle(id, data) {
+  return request.put(`/solo/styles/${id}`, data)
+}
+
+export function disableStyle(id) {
+  return request.delete(`/solo/styles/${id}`)
 }
 
 // ---------------------------------------------------------------- 预约

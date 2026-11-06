@@ -20,6 +20,7 @@ public class ClientResponse {
     private String phoneTail;
     private String source;
     private String remark;
+    private String colorNotes;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate firstVisitDate;

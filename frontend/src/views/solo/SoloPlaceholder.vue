@@ -8,6 +8,8 @@
 import SoloLayout from './SoloLayout.vue'
 
 defineProps({
+  backTo: { type: String, default: '' },
+  backLabel: { type: String, default: '返回' },
   eyebrow: { type: String, default: '' },
   title: { type: String, default: '' },
   phase: { type: String, default: '' },
@@ -17,7 +19,7 @@ defineProps({
 </script>
 
 <template>
-  <SoloLayout>
+  <SoloLayout :back-to="backTo" :back-label="backLabel">
     <header class="lede">
       <span class="eyebrow">{{ eyebrow }}</span>
       <h1 class="lede-title">{{ title }}</h1>

@@ -21,4 +21,7 @@ public class ClientCreateRequest {
 
     @Size(max = 500, message = "备注最长 500 字")
     private String remark;
+
+    @Size(max = 200, message = "常用色号最长 200 字")
+    private String colorNotes;
 }

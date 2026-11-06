@@ -4,11 +4,16 @@ import Login from '../views/Login.vue'
 import AdminHome from '../views/AdminHome.vue'
 import StaffHome from '../views/StaffHome.vue'
 import CustomerHome from '../views/CustomerHome.vue'
+import SoloLogin from '../views/solo/SoloLogin.vue'
 import SoloToday from '../views/solo/SoloToday.vue'
 import SoloSchedule from '../views/solo/SoloSchedule.vue'
 import SoloClients from '../views/solo/SoloClients.vue'
+import SoloClientDetail from '../views/solo/SoloClientDetail.vue'
 import SoloStyles from '../views/solo/SoloStyles.vue'
 import SoloFinance from '../views/solo/SoloFinance.vue'
+
+/** 免登录页面：单人版专用登录 + 多角色演示登录 */
+const PUBLIC_PATHS = ['/solo/login', '/login']
 
 /**
  * 单人版分支：管理员登录后直接落在「今天」。
@@ -55,6 +60,11 @@ const router = createRouter({
       redirect: '/solo/today'
     },
     {
+      path: '/solo/login',
+      name: 'SoloLogin',
+      component: SoloLogin
+    },
+    {
       path: '/solo/today',
       name: 'SoloToday',
       component: SoloToday,
@@ -73,6 +83,12 @@ const router = createRouter({
       meta: { role: 'ADMIN' }
     },
     {
+      path: '/solo/clients/:id',
+      name: 'SoloClientDetail',
+      component: SoloClientDetail,
+      meta: { role: 'ADMIN' }
+    },
+    {
       path: '/solo/styles',
       name: 'SoloStyles',
       component: SoloStyles,
@@ -86,7 +102,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/solo/today'
     }
   ]
 })
@@ -95,12 +111,12 @@ router.beforeEach((to) => {
   const userStore = useUserStore()
 
   if (!userStore.isLoggedIn) {
-    return to.path === '/login' ? true : '/login'
+    return PUBLIC_PATHS.includes(to.path) ? true : '/solo/login'
   }
 
   const ownHome = homeForRole(userStore.roleCode)
 
-  if (to.path === '/login') {
+  if (PUBLIC_PATHS.includes(to.path)) {
     if (ownHome) {
       return ownHome
     }

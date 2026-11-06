@@ -45,6 +45,10 @@ public class Client {
     @Column(name = "remark", length = 500)
     private String remark;
 
+    /** 常用色号 / 偏好色，客户档案里手记，例：#E03 裸粉。 */
+    @Column(name = "color_notes", length = 200)
+    private String colorNotes;
+
     @Column(name = "first_visit_date")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")

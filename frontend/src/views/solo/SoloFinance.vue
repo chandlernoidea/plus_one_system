@@ -7,6 +7,8 @@ import SoloPlaceholder from './SoloPlaceholder.vue'
 
 <template>
   <SoloPlaceholder
+    back-to="/solo/today"
+    back-label="今天"
     eyebrow="SOLO · LEDGER"
     title="财务"
     phase="P6 落地：收支与对账"

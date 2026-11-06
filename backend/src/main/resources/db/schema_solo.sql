@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS solo_client (
     phone_tail       VARCHAR(4)   DEFAULT NULL COMMENT '手机号后 4 位（选填）',
     source           VARCHAR(30)  DEFAULT NULL COMMENT '来源：小红书 / 朋友介绍 / 路过 / 老客',
     remark           VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    color_notes      VARCHAR(200) DEFAULT NULL COMMENT '常用色号 / 偏好色，例：#E03 裸粉',
     first_visit_date DATE         DEFAULT NULL COMMENT '首次到访日期',
     last_visit_date  DATE         DEFAULT NULL COMMENT '最近到访日期',
     deleted          TINYINT      NOT NULL DEFAULT 0 COMMENT '是否已删除：0 否，1 是（软删除，历史预约保留）',
@@ -217,3 +218,24 @@ CREATE TABLE IF NOT EXISTS solo_booking_event (
     PRIMARY KEY (id),
     KEY idx_solo_booking_event_booking (booking_id, created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '预约状态事件';
+
+-- ============================================================
+-- P5 增量：客户档案补「常用色号」
+-- 说明：MySQL 8 / MariaDB 都不支持 ADD COLUMN IF NOT EXISTS，
+-- 这里用 information_schema 判断后动态执行，脚本可重复运行。
+-- ============================================================
+
+SET @solo_client_color_notes_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'solo_client'
+      AND COLUMN_NAME = 'color_notes'
+);
+SET @solo_client_color_notes_ddl = IF(
+    @solo_client_color_notes_exists = 0,
+    'ALTER TABLE solo_client ADD COLUMN color_notes VARCHAR(200) DEFAULT NULL COMMENT ''常用色号 / 偏好色，例：#E03 裸粉'' AFTER remark',
+    'SELECT 1'
+);
+PREPARE solo_client_color_notes_stmt FROM @solo_client_color_notes_ddl;
+EXECUTE solo_client_color_notes_stmt;
+DEALLOCATE PREPARE solo_client_color_notes_stmt;

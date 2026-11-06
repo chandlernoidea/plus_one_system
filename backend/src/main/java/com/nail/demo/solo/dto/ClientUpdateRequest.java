@@ -12,4 +12,5 @@ public class ClientUpdateRequest {
     private String phoneTail;
     private String source;
     private String remark;
+    private String colorNotes;
 }

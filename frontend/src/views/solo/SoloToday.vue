@@ -349,6 +349,8 @@ const weekdayText = computed(() => {
 
 <template>
   <SoloLayout>
+    <div class="today-grid">
+      <div class="today-main">
     <!-- 抬头 -->
     <header class="lede">
       <span class="eyebrow">SOLO · TODAY</span>
@@ -444,6 +446,9 @@ const weekdayText = computed(() => {
       </p>
     </section>
 
+      </div>
+
+      <aside class="today-side">
     <!-- 提醒 -->
     <section class="reminders">
       <button type="button" class="fold" @click="remindersOpen = !remindersOpen">
@@ -464,6 +469,8 @@ const weekdayText = computed(() => {
         </article>
       </div>
     </section>
+      </aside>
+    </div>
 
     <!-- 抽屉 -->
     <BookingCreateSheet
@@ -530,6 +537,14 @@ const weekdayText = computed(() => {
 
 <style scoped>
 /* ---- 抬头 ---- */
+
+.today-grid {
+  display: block;
+}
+
+.today-main {
+  min-width: 0;
+}
 
 .lede {
   margin-bottom: var(--s3);
@@ -937,6 +952,26 @@ const weekdayText = computed(() => {
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* 电脑：作业区在左，提醒固定在右栏 */
+@media (min-width: 1000px) {
+  .today-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--s6);
+    align-items: start;
+  }
+
+  .today-side {
+    position: sticky;
+    top: 96px;
+  }
+
+  .reminders {
+    border-top: 1px solid var(--line);
+    padding-top: var(--s2);
+  }
 }
 
 @media (max-width: 360px) {

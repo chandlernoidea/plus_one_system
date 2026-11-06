@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.nail.demo.common.ApiResponse;
 import com.nail.demo.solo.dto.ClientCreateRequest;
+import com.nail.demo.solo.dto.ClientDetailResponse;
 import com.nail.demo.solo.dto.ClientResponse;
 import com.nail.demo.solo.dto.ClientUpdateRequest;
 import com.nail.demo.solo.service.ClientService;
@@ -32,9 +33,21 @@ public class SoloClientController {
         return ApiResponse.success(clientService.search(keyword));
     }
 
+    /** 同名检查：新建客户时提示「重名了，加个区分词」。 */
+    @GetMapping("/check-name")
+    public ApiResponse<List<ClientResponse>> checkName(@RequestParam String nickname) {
+        return ApiResponse.success(clientService.checkName(nickname));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<ClientResponse> get(@PathVariable Long id) {
         return ApiResponse.success(clientService.get(id));
+    }
+
+    /** 客户详情：档案 + 历史预约 + 做过的款式。 */
+    @GetMapping("/{id}/detail")
+    public ApiResponse<ClientDetailResponse> detail(@PathVariable Long id) {
+        return ApiResponse.success(clientService.detail(id));
     }
 
     @PostMapping

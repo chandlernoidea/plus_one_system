@@ -17,6 +17,9 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
     /** 取最新一条，用于生成下一个短号（#C012）。 */
     Optional<Client> findTopByOrderByIdDesc();
 
+    /** 同名客户：新建时用来提示「重名了，加个区分词」。 */
+    List<Client> findByNicknameAndDeletedOrderByIdAsc(String nickname, Integer deleted);
+
     /** 客户列表默认按最近到访倒序。 */
     List<Client> findByDeletedOrderByLastVisitDateDescIdDesc(Integer deleted);
 
