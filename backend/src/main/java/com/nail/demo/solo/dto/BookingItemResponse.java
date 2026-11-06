@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 预约项目返回体：款式名称与价格是建单时的快照。
+ */
 @Data
 @Builder
 @NoArgsConstructor

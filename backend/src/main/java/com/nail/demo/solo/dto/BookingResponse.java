@@ -10,6 +10,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 预约返回体：客户信息、项目列表、定金状态与余额（均由流水推导）。
+ */
 @Data
 @Builder
 @NoArgsConstructor

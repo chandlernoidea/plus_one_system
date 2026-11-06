@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+/**
+ * 改期入参：新时间、发起方，以及不满足免费条件时的定金处置选择。
+ */
 @Data
 public class BookingRescheduleRequest {
 

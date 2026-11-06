@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * 收支流水查询入口（明细与月度聚合）。
+ */
 public interface MoneyFlowRepository extends JpaRepository<MoneyFlow, Long> {
 
     List<MoneyFlow> findByHappenedAtBetweenOrderByHappenedAtAsc(LocalDateTime from, LocalDateTime to);

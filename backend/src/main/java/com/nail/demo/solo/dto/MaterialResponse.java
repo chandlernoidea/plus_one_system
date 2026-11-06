@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 物料返回体：库存、成本、赞助信息与采购状态。
+ */
 @Data
 @Builder
 @NoArgsConstructor

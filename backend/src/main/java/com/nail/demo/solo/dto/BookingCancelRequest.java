@@ -3,6 +3,9 @@ package com.nail.demo.solo.dto;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 取消预约的入参：原因，以及定金怎么处理（退定 / 没收 / 先不动）。
+ */
 @Data
 public class BookingCancelRequest {
 

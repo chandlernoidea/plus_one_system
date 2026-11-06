@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 客户档案返回体：短号、昵称、后四位、来源、常用色号、首访与最近到访。
+ */
 @Data
 @Builder
 @NoArgsConstructor

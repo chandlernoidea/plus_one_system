@@ -27,6 +27,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 预约接口：建单、列表、改期/取消/到店/开始/完成/爽约、定金与按单领料。
+ */
 @RestController
 @RequestMapping("/api/solo/bookings")
 @RequiredArgsConstructor
@@ -67,7 +70,7 @@ public class SoloBookingController {
 
     @PostMapping("/{id}/cancel")
     public ApiResponse<BookingResponse> cancel(@PathVariable Long id,
-                                               @RequestBody(required = false) BookingCancelRequest request) {
+                                               @Valid @RequestBody(required = false) BookingCancelRequest request) {
         return ApiResponse.success(bookingService.cancel(id, request == null ? new BookingCancelRequest() : request));
     }
 

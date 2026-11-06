@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 改期结果：是否真的改了、是否免费、是否需要老板先决定定金。
+ */
 @Data
 @Builder
 @NoArgsConstructor

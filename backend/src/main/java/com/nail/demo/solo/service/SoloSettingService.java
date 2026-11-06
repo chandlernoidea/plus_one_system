@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.nail.demo.exception.BusinessException;
+import com.nail.demo.solo.dto.SettingsRequest;
 import com.nail.demo.solo.dto.SettingsResponse;
 import com.nail.demo.solo.entity.SoloSetting;
 import com.nail.demo.solo.repository.SoloSettingRepository;
@@ -89,7 +90,7 @@ public class SoloSettingService {
     }
 
     @Transactional
-    public SettingsResponse update(SettingsResponse request) {
+    public SettingsResponse update(SettingsRequest request) {
         LocalTime open = parseTime(request.getOpenTime(), null);
         LocalTime close = parseTime(request.getCloseTime(), null);
         if (open == null || close == null) {

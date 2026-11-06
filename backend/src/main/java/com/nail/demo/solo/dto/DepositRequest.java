@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 记定金流水入参：类型（收取/抵扣/退还/没收）、金额、原因。
+ */
 @Data
 public class DepositRequest {
 

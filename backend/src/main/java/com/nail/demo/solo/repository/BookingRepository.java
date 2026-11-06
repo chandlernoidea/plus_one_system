@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * 预约查询入口（含冲突检测的重叠查询）。
+ */
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /** 按时间窗查排期（日 / 周视图）。 */

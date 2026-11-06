@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+/**
+ * 记一笔收支的入参：方向、类别、金额、发生时间与备注。
+ */
 @Data
 public class MoneyFlowRequest {
 

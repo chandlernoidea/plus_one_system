@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 新建 / 编辑物料入参；赞助物料成本会被强制归零。
+ */
 @Data
 public class MaterialSaveRequest {
 

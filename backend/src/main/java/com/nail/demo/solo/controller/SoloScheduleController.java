@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 排期接口：日作业单（营业窗口 + 预约 + 空档 + 统计）与周视图。
+ */
 @RestController
 @RequestMapping("/api/solo/schedule")
 @RequiredArgsConstructor

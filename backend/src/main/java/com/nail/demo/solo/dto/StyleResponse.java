@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 款式返回体：名称、封面、标准时长、标准价、材料清单与标签。
+ */
 @Data
 @Builder
 @NoArgsConstructor

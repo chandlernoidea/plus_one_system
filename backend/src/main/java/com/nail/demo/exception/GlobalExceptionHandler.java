@@ -49,7 +49,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleException(Exception e) {
+        // 异常详情只进日志：堆栈、SQL、类名不该出现在响应里
         log.error("系统异常", e);
-        return ApiResponse.error(500, e.getMessage());
+        return ApiResponse.error(500, "服务器处理失败，请稍后重试（详情见服务端日志）");
     }
 }

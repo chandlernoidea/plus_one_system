@@ -5,6 +5,9 @@ import java.util.List;
 import com.nail.demo.solo.entity.MaterialUsage;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * 按单领料查询入口。
+ */
 public interface MaterialUsageRepository extends JpaRepository<MaterialUsage, Long> {
 
     /** 一单领用了哪些料。 */

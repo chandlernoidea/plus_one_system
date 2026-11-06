@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 顺延结果：影响 N 单的清单，预览与执行共用。
+ */
 @Data
 @Builder
 @NoArgsConstructor

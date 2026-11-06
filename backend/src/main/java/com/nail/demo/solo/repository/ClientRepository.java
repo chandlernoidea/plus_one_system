@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * 客户查询入口（短号、同名、三合一搜索）。
+ */
 public interface ClientRepository extends JpaRepository<Client, Long> {
 
     Optional<Client> findByCode(String code);

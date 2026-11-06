@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * 定金流水查询入口（按单、按时间、按月聚合）。
+ */
 public interface DepositFlowRepository extends JpaRepository<DepositFlow, Long> {
 
     List<DepositFlow> findByBookingIdOrderByHappenedAtAsc(Long bookingId);

@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 款式库接口：列表（可按标签/启用筛选）、新建、编辑、下架。
+ */
 @RestController
 @RequestMapping("/api/solo/styles")
 @RequiredArgsConstructor

@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 财务接口：月度概览、三本明细（收入/支出/定金）、记一笔。
+ */
 @RestController
 @RequestMapping("/api/solo/finance")
 @RequiredArgsConstructor

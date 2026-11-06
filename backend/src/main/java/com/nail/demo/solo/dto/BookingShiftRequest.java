@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+/**
+ * 顺延入参：日期、起点时刻、平移分钟数。
+ */
 @Data
 public class BookingShiftRequest {
 

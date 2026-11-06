@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 新建客户入参：昵称必填，其余选填；短号由服务端生成。
+ */
 @Data
 public class ClientCreateRequest {
 

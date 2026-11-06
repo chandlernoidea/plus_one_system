@@ -48,10 +48,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        // 单人版只有老板一个角色：多角色演示账号（staff/customer）不得读写 /api/solo/**
+                        .requestMatchers("/api/solo/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
-                .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(this::writeUnauthorized))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(this::writeUnauthorized)
+                        .accessDeniedHandler(this::writeForbidden))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable);
@@ -69,6 +72,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    /** 已登录但角色不够：回 JSON，而不是 Spring 默认的 HTML 错误页。 */
+    private void writeForbidden(HttpServletRequest request,
+                                HttpServletResponse response,
+                                org.springframework.security.access.AccessDeniedException exception) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        objectMapper.writeValue(response.getWriter(), ApiResponse.error(403, "没有权限访问该接口"));
     }
 
     private void writeUnauthorized(HttpServletRequest request,

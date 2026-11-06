@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 定金流水返回体；财务明细里会额外带上预约时间与客户。
+ */
 @Data
 @Builder
 @NoArgsConstructor

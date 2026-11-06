@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 物料接口：库存列表、今天要买的料、新建/编辑、采购状态流转。
+ */
 @RestController
 @RequestMapping("/api/solo/materials")
 @RequiredArgsConstructor

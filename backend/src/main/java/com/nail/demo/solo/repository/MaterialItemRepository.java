@@ -6,6 +6,9 @@ import java.util.List;
 import com.nail.demo.solo.entity.MaterialItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+/**
+ * 物料库存查询入口。
+ */
 public interface MaterialItemRepository extends JpaRepository<MaterialItem, Long> {
 
     List<MaterialItem> findAllByOrderByNameAsc();

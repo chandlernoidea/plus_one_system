@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 客户接口：三合一搜索、详情（含历史与做过的款）、新建、编辑、软删除。
+ */
 @RestController
 @RequestMapping("/api/solo/clients")
 @RequiredArgsConstructor

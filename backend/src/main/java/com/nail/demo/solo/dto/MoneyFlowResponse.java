@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 收支明细返回体；带预约开始时间以便跳回预约。
+ */
 @Data
 @Builder
 @NoArgsConstructor

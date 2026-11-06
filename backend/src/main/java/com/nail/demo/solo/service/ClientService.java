@@ -36,6 +36,9 @@ public class ClientService {
 
     private static final String CODE_PREFIX = "#C";
 
+    /** 一次导入的行数上限：防止一段超大文本把内存撑爆。 */
+    private static final int MAX_IMPORT_LINES = 2000;
+
     private final ClientRepository clientRepository;
     private final BookingRepository bookingRepository;
     private final BookingItemRepository bookingItemRepository;
@@ -116,6 +119,9 @@ public class ClientService {
                 .forEach(client -> seen.add(client.getNickname()));
 
         String[] lines = csv.replace("\uFEFF", "").split("\r?\n");
+        if (lines.length > MAX_IMPORT_LINES) {
+            throw new BusinessException("一次最多导入 %d 行，请拆分后再试".formatted(MAX_IMPORT_LINES));
+        }
         int lineNo = 0;
         for (String line : lines) {
             if (!StringUtils.hasText(line)) {
@@ -131,13 +137,16 @@ public class ClientService {
             String source = cells.size() > 2 ? cells.get(2) : "";
             String remark = cells.size() > 3 ? cells.get(3) : "";
 
-            boolean valid = StringUtils.hasText(nickname)
+            boolean tooLong = nickname.length() > 50 || source.length() > 30 || remark.length() > 500;
+            boolean valid = StringUtils.hasText(nickname) && !tooLong
                     && (!StringUtils.hasText(phoneTail) || phoneTail.matches("\\d{4}"));
             boolean duplicate = StringUtils.hasText(nickname) && seen.contains(nickname);
 
             String note;
             if (!StringUtils.hasText(nickname)) {
                 note = "昵称空着，跳过";
+            } else if (tooLong) {
+                note = "昵称≤50 / 来源≤30 / 备注≤500";
             } else if (!valid) {
                 note = "手机后四位要 4 位数字";
             } else if (duplicate) {

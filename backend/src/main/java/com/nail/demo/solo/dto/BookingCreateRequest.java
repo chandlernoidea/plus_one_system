@@ -14,6 +14,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+/**
+ * 建单入参：客户、开始时间、缓冲、来源、连单分组与项目列表。
+ */
 @Data
 public class BookingCreateRequest {
 

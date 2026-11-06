@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 领料返回体：数量与成本快照（赞助物料为 0）。
+ */
 @Data
 @Builder
 @NoArgsConstructor

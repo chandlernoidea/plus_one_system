@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 按单领料入参：物料与数量。
+ */
 @Data
 public class MaterialUsageRequest {
 

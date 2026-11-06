@@ -9,6 +9,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 周视图返回体：从 from 起 7 天的日排期。
+ */
 @Data
 @Builder
 @NoArgsConstructor

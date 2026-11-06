@@ -19,6 +19,7 @@ import com.nail.demo.solo.repository.BookingRepository;
 import com.nail.demo.solo.repository.ClientRepository;
 import com.nail.demo.solo.repository.DepositFlowRepository;
 import com.nail.demo.solo.repository.MoneyFlowRepository;
+import com.nail.demo.solo.support.CsvCell;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,24 +154,14 @@ public class ExportService {
         return "退出";
     }
 
-    /** 一行 CSV：值里有逗号或引号就包起来。 */
+    /** 一行 CSV：转义交给 {@link CsvCell}（含公式注入防护）。 */
     private void appendRow(StringBuilder sb, String... values) {
         for (int i = 0; i < values.length; i++) {
             if (i > 0) {
                 sb.append(',');
             }
-            sb.append(escape(values[i]));
+            sb.append(CsvCell.escape(values[i]));
         }
         sb.append("\r\n");
-    }
-
-    private String escape(String value) {
-        if (value == null) {
-            return "";
-        }
-        String text = value.replace("\"", "\"\"");
-        return text.contains(",") || text.contains("\"") || text.contains("\n")
-                ? "\"" + text + "\""
-                : text;
     }
 }
