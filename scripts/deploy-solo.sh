@@ -35,7 +35,8 @@ fi
 APP_DIR=/opt/one-finger
 WEB_DIR=/var/www/one-finger
 SERVICE=one-finger
-VERSION=$(grep -m1 "<version>" backend/pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+# 注意：pom 里第一个 <version> 是 Spring Boot 父版本，要取 </parent> 之后的那个
+VERSION=$(sed -n '/<\/parent>/,$p' backend/pom.xml | grep -m1 "<version>" | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
@@ -50,9 +51,9 @@ else
   say "1-2/5 跳过构建（--skip-build）"
 fi
 
-JAR=$(ls -t backend/target/nail-demo-backend-*.jar 2>/dev/null | head -1)
-if [ -z "$JAR" ]; then
-  echo "找不到 jar，先去掉 --skip-build 跑一次"
+JAR="backend/target/nail-demo-backend-${VERSION}.jar"
+if [ ! -f "$JAR" ]; then
+  echo "找不到 $JAR（版本号与 pom 对不上，或没构建）。去掉 --skip-build 再跑一次。"
   exit 1
 fi
 

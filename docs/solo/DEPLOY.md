@@ -1,7 +1,17 @@
-# 部署说明 · V0.8.0
+# 部署说明 · V0.8.4
 
 > 目标：把单人版跑在**你自己的服务器**上，一个人用、手机能开。
 > 装好以后的日常运维（命令、备份、巡检、故障处理、安全基线）见 [OPS.md](OPS.md)。
+
+## 两种装法
+
+| 方式 | 适合 | 怎么做 |
+|---|---|---|
+| **一键安装包**（推荐） | 新服务器，想快点跑起来 | 本地 `./scripts/package-release.sh` 出包 → 传上去 → `sudo bash scripts/install.sh` |
+| 手工安装（本文第 1–6 节） | 想一步步看清每个动作 | 按下面章节走 |
+
+一键安装包会做完全部手工步骤，另外还会：生成随机数据库密码与 JWT 密钥、把 admin 初始密码改掉并写进
+`/root/one-finger-credentials.txt`、开防火墙与 fail2ban、装备份 cron。
 > 形态是前端静态文件（nginx）+ 后端 jar（systemd）+ MySQL，同一台机器即可。
 
 ## 0. 前置
@@ -19,7 +29,7 @@
 ```
 /opt/one-finger/
 ├── backend/          # jar 与配置文件
-│   ├── nail-demo-backend-0.8.0.jar
+│   ├── nail-demo-backend-0.8.4.jar
 │   └── app.env       # 环境变量（chmod 600）
 ├── uploads/          # 封面等上传文件
 └── backups/          # 备份
@@ -44,7 +54,7 @@ FLUSH PRIVILEGES;
 ```bash
 # 后端
 cd backend
-mvn -B package            # 产物：target/nail-demo-backend-0.8.0.jar
+mvn -B package            # 产物：target/nail-demo-backend-0.8.4.jar
 mvn test                  # 12 例单测
 
 # 前端
@@ -53,7 +63,7 @@ npm ci
 npm run build             # 产物：dist/
 ```
 
-把 `nail-demo-backend-0.8.0.jar` 传到 `/opt/one-finger/backend/`，
+把 `nail-demo-backend-0.8.4.jar` 传到 `/opt/one-finger/backend/`，
 把 `frontend/dist/` 整个传到 `/var/www/one-finger/`。
 
 ## 3. 后端环境变量
@@ -87,7 +97,7 @@ Type=simple
 User=onefinger
 WorkingDirectory=/opt/one-finger/backend
 EnvironmentFile=/opt/one-finger/backend/app.env
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/one-finger/backend/nail-demo-backend-0.8.0.jar
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/one-finger/backend/nail-demo-backend-0.8.4.jar
 SuccessExitStatus=143
 Restart=always
 RestartSec=5
@@ -159,6 +169,33 @@ HTTPS（可选但强烈建议，手机端尤其）：
 ```bash
 sudo certbot --nginx -d nail.example.com
 ```
+
+## 5.1 一键安装包（跳过上面的手工步骤）
+
+```bash
+# 本地：出包（约 1 分钟）
+./scripts/package-release.sh
+# → release/one-finger-v0.8.4.tar.gz  (+ .sha256)
+
+# 传到新服务器并安装
+scp release/one-finger-v0.8.4.tar.gz root@新服务器:/root/
+ssh root@新服务器
+tar xzf /root/one-finger-v0.8.4.tar.gz
+cd one-finger-v0.8.4
+sudo bash scripts/install.sh          # 默认 80 端口；换端口加 --port 8080
+```
+
+装完会打印：
+
+```
+✓ 安装完成（V0.8.4）
+  地址      http://<公网IP>
+  账号      admin
+  密码      <随机生成的 14 位>
+  凭据文件  /root/one-finger-credentials.txt
+```
+
+包里的 `scripts/` 还带着发布、迁移脚本，`docs/` 带着这份文档和运维手册，服务器上随时可查。
 
 ## 6. 首次初始化（重要）
 

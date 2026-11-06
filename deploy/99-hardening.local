@@ -1,0 +1,18 @@
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1
+bantime  = 2h
+findtime = 10m
+maxretry = 5
+
+[sshd]
+enabled  = true
+maxretry = 4
+bantime  = 4h
+findtime = 10m
+
+# 反复被 ban 的 IP 直接封一周
+[recidive]
+enabled  = true
+bantime  = 1w
+findtime = 1d
+maxretry = 3

@@ -82,7 +82,23 @@
 
 ---
 
-## 未发布
+## [0.8.4] · 2026-11-07
+
+V0.8.4 = P1–P8 功能 + 账号自助 + 安全审查修复 + 运维与迁移工具 + **一键安装包**。
+
+### 打包 / 部署
+
+- **一键安装包**：`./scripts/package-release.sh` 产出 `release/one-finger-v0.8.4.tar.gz`
+  （jar + 前端 dist + 部署配置 + 安装脚本 + 文档，约 50M，附 sha256）。
+- **一键安装**：新机器上 `sudo bash scripts/install.sh`，自动装 JDK17/MariaDB/nginx、
+  建库建用户、生成并写入随机密钥、装 systemd 与 nginx、开防火墙与 fail2ban、
+  改掉初始密码，最后打印访问地址与账号（同时写 `/root/one-finger-credentials.txt`）。
+- **换服务器迁移**：`scripts/migrate-export.sh`（旧机打包）+ `scripts/migrate-import.sh`（新机还原）。
+
+### 版本
+
+- 后端 `pom.xml`、前端 `package.json`、登录页副标题统一为 `0.8.4`。
+
 
 ### 安全
 
@@ -128,4 +144,4 @@
 - 新增 `docs/solo/REVIEW-V0.8.0.md`：安全、功能、接口规范、注释四角度审查，
   含 12 项安全发现（3 项已修、9 项建议）、10 项功能分析、8 项接口规范意见。
 
-> 这些改动建议作为 **0.8.1** 发布；版本号暂未改动。
+> 以上内容都包含在 0.8.4 里。

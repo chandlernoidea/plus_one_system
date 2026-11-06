@@ -93,7 +93,7 @@ ls -lh /opt/one-finger/backups/
 ssh root@服务器
 cp /opt/one-finger/backend/app.jar /opt/one-finger/backend/app.jar.bad
 # 换回上一个版本（如果你留了旧 jar）
-cp /opt/one-finger/backend/nail-demo-backend-0.8.0.jar /opt/one-finger/backend/app.jar
+cp /opt/one-finger/backend/nail-demo-backend-0.8.4.jar /opt/one-finger/backend/app.jar
 systemctl restart one-finger
 ```
 
@@ -286,6 +286,7 @@ mariadb -N -e "SELECT COUNT(*) FROM nail_demo.solo_client;"          # 和旧机
 | 日期 | 变更 |
 |---|---|
 | 2026-11-06 | 首次部署：Debian 12 + JDK17 + MariaDB 10.11 + nginx，V0.8.0 |
+| 2026-11-07 | 发布 V0.8.4：新增一键安装包与打包脚本 |
 | 2026-11-06 | 精简 `/root/.zshrc`（去掉逐键重画的 zsh 插件），修 SSH 输入异常 |
 | 2026-11-07 | 安全加固：补丁、防火墙、fail2ban、SSH、内核参数、DB、nginx、权限、口令轮换 |
 | 2026-11-07 | 重启服务器，内核从 6.1.0-18 切到 6.1.0-54；重启后全部服务自启正常，启动耗时 9.1s，无启动错误 |

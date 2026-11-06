@@ -42,3 +42,6 @@ backend/src/main/resources/application-local.yml
 backend/.m2-test/
 frontend/.npm-cache/
 frontend/vite.test.config.js
+
+# 打包产物（约 50M，不进仓库）
+release/
