@@ -72,6 +72,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SysUser user = sysUserRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("JWT 用户不存在"));
 
+            // 改过密码 / 用户名后版本号会 +1，旧 token 立刻作废
+            Object versionClaim = claims.get("tokenVersion");
+            int tokenVersion = versionClaim instanceof Number ? ((Number) versionClaim).intValue() : 0;
+            int currentVersion = user.getTokenVersion() == null ? 0 : user.getTokenVersion();
+            if (tokenVersion != currentVersion) {
+                throw new IllegalArgumentException("令牌已失效，请重新登录");
+            }
+
             CurrentUser currentUser = CurrentUser.builder()
                     .userId(user.getId())
                     .username(username)

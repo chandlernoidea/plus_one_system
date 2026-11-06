@@ -191,3 +191,12 @@ export function downloadCsv(kind) {
     headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
   })
 }
+
+export function fetchAccount() {
+  return request.get('/solo/account')
+}
+
+/** 改登录名 / 改密码；成功后旧 token 立即失效，必须重新登录。 */
+export function updateAccount(data) {
+  return request.put('/solo/account', data)
+}

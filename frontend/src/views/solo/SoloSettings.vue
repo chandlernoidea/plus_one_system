@@ -6,9 +6,18 @@
  * 都是「装机器/搬数据」时才会点的低频操作。
  */
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '../../store/user'
 import SoloLayout from './SoloLayout.vue'
 import * as api from '../../api/solo'
+
+const router = useRouter()
+const userStore = useUserStore()
+
+const account = ref({ username: '', realName: '', roleCode: '' })
+const accountForm = ref({ currentPassword: '', newUsername: '', newPassword: '', confirmPassword: '' })
+const savingAccount = ref(false)
 
 const form = ref({
   openTime: '08:30',
@@ -35,7 +44,20 @@ async function load() {
   }
 }
 
-onMounted(load)
+async function loadAccount() {
+  try {
+    const response = await api.fetchAccount()
+    account.value = response.data.data
+    accountForm.value.newUsername = ''
+  } catch (error) {
+    // 提示已由拦截器统一给出
+  }
+}
+
+onMounted(() => {
+  load()
+  loadAccount()
+})
 
 async function save() {
   saving.value = true
@@ -53,6 +75,35 @@ async function save() {
     // 提示已由拦截器统一给出
   } finally {
     saving.value = false
+  }
+}
+
+async function saveAccount() {
+  const { currentPassword, newUsername, newPassword, confirmPassword } = accountForm.value
+  if (!currentPassword) {
+    ElMessage.warning('先填当前密码')
+    return
+  }
+  if (newPassword && newPassword !== confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+
+  savingAccount.value = true
+  try {
+    await api.updateAccount({
+      currentPassword,
+      newUsername: newUsername || null,
+      newPassword: newPassword || null
+    })
+    ElMessage.success('已更新，请用新账号重新登录')
+    // 旧 token 已经失效，主动退出更不容易懵
+    userStore.logout()
+    router.replace('/solo/login')
+  } catch (error) {
+    // 提示已由拦截器统一给出
+  } finally {
+    savingAccount.value = false
   }
 }
 
@@ -99,6 +150,42 @@ async function seedDemo() {
       <h1 class="lede-title">设置</h1>
       <p class="lede-note">改完立刻生效 · 只影响之后的建单与排期</p>
     </header>
+
+    <section class="block">
+      <div class="block-head">
+        <span class="block-title">账号</span>
+        <span class="block-line"></span>
+      </div>
+      <p class="cell-hint">
+        当前登录名 <span class="mono">{{ account.username || '—' }}</span>
+        · 改登录名或密码要先验证当前密码，改完会退出，请用新信息重新登录。
+      </p>
+      <div class="form">
+        <div class="row">
+          <label class="cell">
+            <span class="cell-label">当前密码</span>
+            <input v-model="accountForm.currentPassword" class="input" type="password" autocomplete="current-password" placeholder="必填" />
+          </label>
+          <label class="cell">
+            <span class="cell-label">新登录名</span>
+            <input v-model="accountForm.newUsername" class="input" type="text" autocomplete="username" placeholder="不改就留空" />
+          </label>
+        </div>
+        <div class="row">
+          <label class="cell">
+            <span class="cell-label">新密码</span>
+            <input v-model="accountForm.newPassword" class="input" type="password" autocomplete="new-password" placeholder="至少 8 位，不改就留空" />
+          </label>
+          <label class="cell">
+            <span class="cell-label">确认新密码</span>
+            <input v-model="accountForm.confirmPassword" class="input" type="password" autocomplete="new-password" placeholder="再输一次" />
+          </label>
+        </div>
+        <button type="button" class="btn btn-primary" :disabled="savingAccount" @click="saveAccount">
+          {{ savingAccount ? '保存中…' : '保存账号' }}
+        </button>
+      </div>
+    </section>
 
     <section class="block">
       <div class="block-head">

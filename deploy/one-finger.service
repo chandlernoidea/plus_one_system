@@ -1,0 +1,17 @@
+[Unit]
+Description=One Finger Studio backend
+After=network.target mariadb.service
+
+[Service]
+Type=simple
+User=onefinger
+WorkingDirectory=/opt/one-finger/backend
+EnvironmentFile=/opt/one-finger/backend/app.env
+# 固定用 app.jar：发布时覆盖它再 restart，服务定义永远不用改
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai -jar /opt/one-finger/backend/app.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

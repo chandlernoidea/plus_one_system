@@ -41,6 +41,10 @@ public class SysUser {
     @Column(name = "status", length = 20)
     private String status;
 
+    /** 令牌版本：改密码 / 用户名时 +1，之前签发的 token 立即失效（无状态 JWT 的吊销手段）。 */
+    @Column(name = "token_version")
+    private Integer tokenVersion = 0;
+
     @Column(name = "created_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

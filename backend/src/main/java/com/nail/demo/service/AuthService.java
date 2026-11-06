@@ -48,7 +48,8 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("用户角色不存在"));
 
         String roleCode = role.getRoleCode();
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), roleCode);
+        int tokenVersion = user.getTokenVersion() == null ? 0 : user.getTokenVersion();
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), roleCode, tokenVersion);
 
         return LoginResponse.builder()
                 .token(token)

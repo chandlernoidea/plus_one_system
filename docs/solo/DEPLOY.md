@@ -200,19 +200,54 @@ tar czf /opt/one-finger/backups/uploads-$(date +%F).tar.gz -C /opt/one-finger up
 
 恢复：`gunzip -c db-2026-11-06.sql.gz | mysql -u nail -p nail_demo`，再把 uploads 解回原位。
 
-## 8. 升级
+## 8. 日常发布（本地改完同步到服务器）
+
+仓库里带了发布脚本，一条命令完成：构建 → 上传 → 需要时同步表结构 → 重启 → 自检。
 
 ```bash
-sudo systemctl stop one-finger
-# 覆盖 jar
-sudo cp nail-demo-backend-0.8.x.jar /opt/one-finger/backend/
-# 覆盖前端
-sudo rsync -a --delete frontend/dist/ /var/www/one-finger/
-# 表结构有变化时先手工跑一遍幂等脚本（见 6 的提示）
-sudo systemctl start one-finger
+# 第一次：配好免密登录，之后就不用输密码了
+ssh-keygen -t ed25519            # 一路回车（已有密钥可跳过）
+ssh-copy-id root@你的服务器IP
+
+# 以后每次改完代码
+./scripts/deploy-solo.sh root@你的服务器IP
+
+# 这次改动了表结构（schema 里新增了列/表）
+./scripts/deploy-solo.sh root@你的服务器IP --schema
 ```
 
-前端静态文件带指纹，覆盖后用户刷新即生效；后端重启期间大约有几秒不可用，单人使用可以接受。
+脚本做的事：
+
+1. `mvn package -DskipTests` + `npm run build`（`--skip-build` 可跳过，复用上次产物）；
+2. jar 传成 `app.jar.new`，传完再原子替换成 `app.jar`（避免半截文件被读到）；
+3. dist 清空重铺，属主改回 `onefinger`；
+4. `--schema` 时把幂等的 `schema_solo.sql` 灌进库；
+5. `systemctl restart one-finger`，轮询到后端返回 401 为止；
+6. 从公网回测首页与接口，异常就报错退出。
+
+> 服务固定跑 `/opt/one-finger/backend/app.jar`，所以升级不用改 systemd 单元。
+> 服务器地址别写进仓库，用参数或 `export SOLO_HOST=root@1.2.3.4`。
+
+手工发布（不想用脚本）：
+
+```bash
+cd backend && mvn -B package -DskipTests
+cat target/nail-demo-backend-*.jar | ssh root@服务器 'cat > /opt/one-finger/backend/app.jar.new'
+ssh root@服务器 'mv /opt/one-finger/backend/app.jar.new /opt/one-finger/backend/app.jar && chown onefinger:onefinger /opt/one-finger/backend/app.jar && systemctl restart one-finger'
+cd ../frontend && npm run build && tar czf - -C dist . | ssh root@服务器 'rm -rf /var/www/one-finger/* && tar xzf - -C /var/www/one-finger'
+```
+
+## 8.1 改了账号/密码怎么找回
+
+登录后在 **设置 → 账号** 里改登录名和密码（要先输当前密码，改完自动退出、旧 token 立即失效）。
+忘了密码只能在服务器上改：
+
+```sql
+-- 写明文，重启后启动时的迁移会把明文转成 BCrypt
+UPDATE sys_user SET password = '新密码', token_version = token_version + 1 WHERE username = 'admin';
+```
+
+改完 `systemctl restart one-finger`，用新密码登录。
 
 ## 9. 常见问题
 
@@ -230,6 +265,7 @@ sudo systemctl start one-finger
 
 - [ ] 数据库密码、`JWT_SECRET` 已换，`app.env` 权限 600
 - [ ] admin 初始密码已改，`spring.sql.init.mode=never`
+- [ ] 登录后在「设置 → 账号」再确认一次密码可改（改完会自动退出）
 - [ ] nginx `try_files` 与 `/api`、`/uploads` 反代都通
 - [ ] HTTPS 已挂，手机上打开正常
 - [ ] 备份 cron 已跑过一次并确认能恢复

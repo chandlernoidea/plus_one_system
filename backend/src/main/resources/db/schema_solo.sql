@@ -251,3 +251,22 @@ CREATE TABLE IF NOT EXISTS solo_setting (
     PRIMARY KEY (id),
     UNIQUE KEY uk_solo_setting_key (setting_key)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '单人版设置';
+
+-- ------------------------------------------------------------
+-- P9 账号设置：改密码后让旧 token 立刻失效（token_version 递增即吊销）
+-- 同样用 information_schema 判断，脚本可重复运行。
+-- ------------------------------------------------------------
+SET @sys_user_token_version_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'sys_user'
+      AND COLUMN_NAME = 'token_version'
+);
+SET @sys_user_token_version_ddl = IF(
+    @sys_user_token_version_exists = 0,
+    'ALTER TABLE sys_user ADD COLUMN token_version INT NOT NULL DEFAULT 0 COMMENT ''令牌版本：改密码时 +1，旧 token 立即失效''',
+    'SELECT 1'
+);
+PREPARE sys_user_token_version_stmt FROM @sys_user_token_version_ddl;
+EXECUTE sys_user_token_version_stmt;
+DEALLOCATE PREPARE sys_user_token_version_stmt;
