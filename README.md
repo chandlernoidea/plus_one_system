@@ -7,6 +7,24 @@
 - 答辩演示步骤：[docs/DEMO.md](docs/DEMO.md)
 - 演示图片素材：[frontend/public/demo](frontend/public/demo)
 
+---
+
+## 单人工作室版 · V0.8.0（分支 `feat/solo-studio`）
+
+上面描述的是多角色演示版（`main`）。单人版是同一套技术栈上的另一条产品线，
+**老板 = 美甲师 = 唯一使用者**，只回答四个问题：今天给谁做、材料够不够、定金收没收、这个月对得上吗。
+
+| 想做的事 | 去哪看 |
+|---|---|
+| 了解产品与文档地图 | [docs/solo/README.md](docs/solo/README.md) |
+| 部署到自己的服务器 | [docs/solo/DEPLOY.md](docs/solo/DEPLOY.md) |
+| 看逐项验收结论 | [docs/solo/P8-验收清单.md](docs/solo/P8-验收清单.md) |
+| 看这版改了什么 | [CHANGELOG.md](CHANGELOG.md) |
+| 看阶段设计与接口 | [docs/solo/00-brief.md](docs/solo/00-brief.md)（P1–P8 各有一篇） |
+
+单人版的接口全部在 `/api/solo/*`，与既有 `/api/*` 完全隔离；数据表统一 `solo_` 前缀，
+`git checkout main` 回到答辩版本时互不影响。
+
 ## 一、技术栈
 
 ### 后端
