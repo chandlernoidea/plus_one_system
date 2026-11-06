@@ -4,9 +4,18 @@ import Login from '../views/Login.vue'
 import AdminHome from '../views/AdminHome.vue'
 import StaffHome from '../views/StaffHome.vue'
 import CustomerHome from '../views/CustomerHome.vue'
+import SoloToday from '../views/solo/SoloToday.vue'
+import SoloSchedule from '../views/solo/SoloSchedule.vue'
+import SoloClients from '../views/solo/SoloClients.vue'
+import SoloStyles from '../views/solo/SoloStyles.vue'
+import SoloFinance from '../views/solo/SoloFinance.vue'
 
+/**
+ * 单人版分支：管理员登录后直接落在「今天」。
+ * 多角色页面仍保留（答辩用 main 分支，这里只是不抢占入口）。
+ */
 const ROLE_HOME = Object.freeze({
-  ADMIN: '/admin',
+  ADMIN: '/solo/today',
   STAFF: '/staff',
   CUSTOMER: '/customer'
 })
@@ -40,6 +49,40 @@ const router = createRouter({
       name: 'CustomerHome',
       component: CustomerHome,
       meta: { role: 'CUSTOMER' }
+    },
+    {
+      path: '/solo',
+      redirect: '/solo/today'
+    },
+    {
+      path: '/solo/today',
+      name: 'SoloToday',
+      component: SoloToday,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/schedule',
+      name: 'SoloSchedule',
+      component: SoloSchedule,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/clients',
+      name: 'SoloClients',
+      component: SoloClients,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/styles',
+      name: 'SoloStyles',
+      component: SoloStyles,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/finance',
+      name: 'SoloFinance',
+      component: SoloFinance,
+      meta: { role: 'ADMIN' }
     },
     {
       path: '/',

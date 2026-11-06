@@ -11,8 +11,9 @@ import { ElMessage } from 'element-plus'
 import { login } from '../api/auth'
 import { useUserStore } from '../store/user'
 
+// 单人版分支：管理员登录后进「今天」；多角色页面仍保留在路由里
 const ROLE_HOME = {
-  ADMIN: '/admin',
+  ADMIN: '/solo/today',
   STAFF: '/staff',
   CUSTOMER: '/customer'
 }
