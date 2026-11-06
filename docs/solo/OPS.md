@@ -200,12 +200,94 @@ timedatectl | grep "Time zone"          # Asia/Shanghai
 curl -sI http://127.0.0.1/ | grep -i content-security   # CSP 在
 ```
 
-## 9. 变更记录
+## 9. 换服务器（迁移到新机器）
+
+服务器到期、换云厂商、升级配置都走这套。**核心原则：新机器跑通并验证过之前，旧机器不要停、不要退订。**
+
+### 10.1 时间线
+
+| 时间 | 做什么 |
+|---|---|
+| 提前 3 天 | 新服务器按 [DEPLOY.md](DEPLOY.md) 装好 JDK17 / MariaDB / nginx；云控制台安全组放行 22、80；把 migrations 脚本从仓库取下来 |
+| 提前 1 天 | 在旧机器上跑一次导出脚本，把包导进新机器的临时库 `nail_demo_test`，确认能还原（演练一次） |
+| 迁移当天 | ① 旧机器导出 → ② 拷包 → ③ 新机器导入 → ④ 验证 → ⑤ 切换入口（改域名解析或告知新 IP）→ ⑥ 停旧机器 |
+| 之后 3–7 天 | 旧机器保持能开机、能回滚；确认新机器一切正常后再退订 |
+
+### 10.2 具体步骤
+
+**第 1 步 · 旧机器打包**（不停机，热备）：
+
+```bash
+ssh root@旧服务器
+bash -s < scripts/migrate-export.sh      # 或在仓库里 scp 上去执行
+# 产物：/root/one-finger-migrate-YYYY-MM-DD.tar.gz
+```
+
+包里含：数据库全量 dump、上传文件、**当前运行的 jar**、`app.env`、systemd 单元、
+nginx 站点、备份与安全更新的 cron、以及安全加固的配置文件（sshd / sysctl / fail2ban / mariadb）。
+
+**第 2 步 · 拷到新机器**：
+
+```bash
+scp /root/one-finger-migrate-*.tar.gz root@新服务器:/root/
+```
+
+**第 3 步 · 新机器导入**：
+
+```bash
+ssh root@新服务器
+bash migrate-import.sh /root/one-finger-migrate-YYYY-MM-DD.tar.gz
+```
+
+脚本会：建库建用户 → 导数据 → 铺 jar / 上传文件 / 配置 → 装 systemd 与 nginx 站点 →
+恢复 cron 与安全配置 → 启动并等到 `/api/auth/me` 返回 401。
+
+**第 4 步 · 手工验证（必做，别只看脚本输出）**：
+
+```bash
+curl -I http://127.0.0.1/                       # 200
+curl -o /dev/null -w '%{http_code}\n' http://127.0.0.1/api/auth/me   # 401
+mariadb -N -e "SELECT COUNT(*) FROM nail_demo.solo_client;"          # 和旧机器一致
+```
+
+然后用浏览器登录一次：客户列表、今天的作业单、财务三本账都在；
+上传一张款式封面，点开能显示（验证 `/opt/one-finger/uploads` 属主与 `/uploads` 反代）。
+
+**第 5 步 · 切换入口**：
+
+- 有域名：改 DNS 解析到新 IP（提前把 TTL 调小到 300 秒，避免切换后长时间指向旧机器）；
+- 只用 IP：把新地址告诉使用的人，旧地址保留一段时间做跳转说明；
+- 有 HTTPS：证书要在新机器重新签（`certbot --nginx -d 域名`），DNS 生效后再签。
+
+### 10.3 容易踩的坑
+
+| 坑 | 说明 |
+|---|---|
+| **`SPRING_SQL_INIT_MODE` 一定要是 `never`** | 迁移包里带的是你现在的 `app.env`（已经是 never）。如果在新机器手工新建配置却用了 `always`，下次重启 `data.sql` 会把账号密码重置回初始值 |
+| **时区** | 新机器必须 `Asia/Shanghai`：`timedatectl set-timezone Asia/Shanghai`。systemd 单元里已有 `-Duser.timezone=Asia/Shanghai`，JDBC URL 里也有 `serverTimezone`，但主机时区不对仍会影响 MariaDB 的 `NOW()` 与备份文件名 |
+| **上传文件没带走** | 只导数据库会登录正常、客户在、**封面全是 404**。迁移包里 `uploads.tar.gz` 就是干这个的 |
+| **前端产物** | 迁移包默认不带 `dist`（可 rebuild）。如果没带，导入脚本会提示，此时在本地跑 `./scripts/deploy-solo.sh root@新IP` 补传 |
+| **权限** | `/opt/one-finger` 属主必须是 `onefinger`，否则后端起不来或上传失败。导入脚本已处理，手工搬的要自己 `chown -R` |
+| **安全组** | 新机器默认可能只开 22。80 不开 → 站点打不开；3306/8080 **不要**开 |
+| **数据库密码** | 迁移包里带着旧密码。换机器是个换密码的好时机：改 MySQL 用户密码 + `app.env`，然后重启服务 |
+| **JWT 密钥** | 换掉 `JWT_SECRET` 会让所有已登录会话失效（单人版重新登录即可）。如果不换，旧 token 在新机器上依然有效 |
+| **迁移包本身** | 里面有客户昵称、手机后四位、数据库密码，600 权限，**用完立刻删** |
+| **别忘了退订前确认** | 旧机器至少保留一周；确认新机器备份 cron 真的跑过一次（`ls /opt/one-finger/backups`）再退 |
+
+### 10.4 迁移后收尾
+
+- 在新机器跑一次 `sudo -u onefinger /opt/one-finger/backup.sh`，确认备份产物生成；
+- 按第 8 节「自查命令」过一遍安全基线（防火墙、fail2ban、补丁、CSP）；
+- 更新线下记录里的服务器地址与 root 密码；
+- 旧机器 `systemctl stop` 或直接关机，一周后确认无误再退订。
+
+## 10. 变更记录
 
 | 日期 | 变更 |
 |---|---|
 | 2026-11-06 | 首次部署：Debian 12 + JDK17 + MariaDB 10.11 + nginx，V0.8.0 |
 | 2026-11-06 | 精简 `/root/.zshrc`（去掉逐键重画的 zsh 插件），修 SSH 输入异常 |
 | 2026-11-07 | 安全加固：补丁、防火墙、fail2ban、SSH、内核参数、DB、nginx、权限、口令轮换 |
+| 2026-11-07 | 重启服务器，内核从 6.1.0-18 切到 6.1.0-54；重启后全部服务自启正常，启动耗时 9.1s，无启动错误 |
 
 > 加固后实测：登录/建单/导出九宫格案例图全部正常，CSP 无拦截（canvas → data URL → 下载成功）。
