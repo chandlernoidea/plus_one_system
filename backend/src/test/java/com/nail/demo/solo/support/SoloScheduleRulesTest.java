@@ -29,10 +29,11 @@ class SoloScheduleRulesTest {
     @Test
     @DisplayName("改期：距开始 ≥48 小时且未用过免费改期才免费")
     void rescheduleIsFreeOnlyWhenQualified() {
-        assertTrue(SoloScheduleRules.isFreeReschedule(60, false));
-        assertTrue(SoloScheduleRules.isFreeReschedule(48, false), "48 小时整算满足阈值");
-        assertFalse(SoloScheduleRules.isFreeReschedule(47, false), "不足 48 小时需扣定金");
-        assertFalse(SoloScheduleRules.isFreeReschedule(60, true), "免费额度已用过");
+        assertTrue(SoloScheduleRules.isFreeReschedule(60, false, 48));
+        assertTrue(SoloScheduleRules.isFreeReschedule(48, false, 48), "48 小时整算满足阈值");
+        assertFalse(SoloScheduleRules.isFreeReschedule(47, false, 48), "不足 48 小时需扣定金");
+        assertFalse(SoloScheduleRules.isFreeReschedule(60, true, 48), "免费额度已用过");
+        assertTrue(SoloScheduleRules.isFreeReschedule(30, false, 24), "阈值改成 24 小时后 30 小时算免费");
     }
 
     @Test

@@ -30,7 +30,8 @@ const tabs = [
 const secondary = [
   { key: 'styles', label: '款式库', to: '/solo/styles' },
   { key: 'materials', label: '物料', to: '/solo/materials' },
-  { key: 'finance', label: '财务', to: '/solo/finance' }
+  { key: 'finance', label: '财务', to: '/solo/finance' },
+  { key: 'settings', label: '设置', to: '/solo/settings' }
 ]
 
 const today = new Date()

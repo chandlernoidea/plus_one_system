@@ -31,8 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DepositService {
 
-    /** 定金固定 30 元；P7 设置页接配置后再放开。 */
-    public static final BigDecimal STANDARD_AMOUNT = new BigDecimal("30");
+    /** 定金金额来自设置页（默认 30 元）。 */
 
     private static final Map<String, String> LABELS = Map.of(
             SoloDepositFlowType.COLLECT, "收取",
@@ -43,6 +42,7 @@ public class DepositService {
     private final DepositFlowRepository depositFlowRepository;
     private final BookingRepository bookingRepository;
     private final BookingGuard guard;
+    private final SoloSettingService settingService;
 
     @Transactional(readOnly = true)
     public DepositSummaryResponse summary(Long bookingId) {
@@ -68,9 +68,10 @@ public class DepositService {
         }
 
         if (SoloDepositFlowType.COLLECT.equals(type)) {
-            if (ledger.collected().add(amount).compareTo(STANDARD_AMOUNT) > 0) {
+            BigDecimal standard = standardAmount();
+            if (ledger.collected().add(amount).compareTo(standard) > 0) {
                 throw new BusinessException("定金固定 %s 元，已收 %s 元".formatted(
-                        STANDARD_AMOUNT.toPlainString(), ledger.collected().toPlainString()));
+                        standard.toPlainString(), ledger.collected().toPlainString()));
             }
             if (SoloBookingStatus.WAIT_DEPOSIT.equals(booking.getStatus())) {
                 guard.assertNoConflict(booking.getStartAt(), booking.getEndAt(), bookingId);
@@ -147,6 +148,11 @@ public class DepositService {
         };
     }
 
+    /** 设置页配的定金金额。 */
+    public BigDecimal standardAmount() {
+        return settingService.depositAmount();
+    }
+
     public DepositLedger ledgerOf(Long bookingId) {
         return DepositLedger.of(depositFlowRepository.findByBookingIdOrderByHappenedAtAsc(bookingId));
     }
@@ -156,7 +162,7 @@ public class DepositService {
             return requested;
         }
         if (SoloDepositFlowType.COLLECT.equals(type)) {
-            return STANDARD_AMOUNT;
+            return standardAmount();
         }
         return ledger.balance();
     }

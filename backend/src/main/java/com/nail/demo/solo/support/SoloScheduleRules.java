@@ -1,7 +1,6 @@
 package com.nail.demo.solo.support;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -15,16 +14,6 @@ import java.util.Optional;
  * <p>这些规则是 P2 的业务核心，Service 只负责取数、落库与留痕。
  */
 public final class SoloScheduleRules {
-
-    /** 免费改期阈值：距开始 ≥48 小时。 */
-    public static final int FREE_RESCHEDULE_HOURS = 48;
-
-    /** 缓冲默认 20 分钟，可按单覆盖。 */
-    public static final int DEFAULT_BUFFER_MINUTES = 20;
-
-    /** 当天没有营业安排记录时的时间轴默认边界：8:30–22:30。 */
-    public static final LocalTime DEFAULT_DAY_START = LocalTime.of(8, 30);
-    public static final LocalTime DEFAULT_DAY_END = LocalTime.of(22, 30);
 
     /** 空档小于该分钟数不展示为「可塞」。 */
     public static final int MIN_USABLE_GAP_MINUTES = 15;
@@ -43,10 +32,11 @@ public final class SoloScheduleRules {
     }
 
     /**
-     * 改期是否免费：距开始 ≥48 小时且从未用过免费改期。
+     * 改期是否免费：距开始 ≥ 阈值小时数且从未用过免费改期。
+     * 阈值来自设置页（默认 48 小时）。
      */
-    public static boolean isFreeReschedule(long hoursBefore, boolean freeRescheduleUsed) {
-        return hoursBefore >= FREE_RESCHEDULE_HOURS && !freeRescheduleUsed;
+    public static boolean isFreeReschedule(long hoursBefore, boolean freeRescheduleUsed, int thresholdHours) {
+        return hoursBefore >= thresholdHours && !freeRescheduleUsed;
     }
 
     /** 冲突判定：已占用时段与目标时段重叠即冲突（首尾相接不算）。 */
@@ -107,8 +97,5 @@ public final class SoloScheduleRules {
         return !start.isBefore(gap.start()) && !end.isAfter(gap.end());
     }
 
-    /** 单日默认时间窗（无营业安排记录时兜底）。 */
-    public static TimeWindow defaultDayWindow(LocalDate date) {
-        return new TimeWindow(date.atTime(DEFAULT_DAY_START), date.atTime(DEFAULT_DAY_END));
-    }
+
 }

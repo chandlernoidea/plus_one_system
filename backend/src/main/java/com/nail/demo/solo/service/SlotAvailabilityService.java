@@ -28,6 +28,7 @@ public class SlotAvailabilityService {
 
     private final SlotBlockRepository slotBlockRepository;
     private final BookingRepository bookingRepository;
+    private final SoloSettingService settingService;
 
     /** 当天可营业窗口：营业 + 机动位合并；没有配置时用 8:30–22:30 兜底。 */
     public List<TimeWindow> openWindows(LocalDate date) {
@@ -37,7 +38,10 @@ public class SlotAvailabilityService {
                 .filter(window -> window.minutes() > 0)
                 .sorted(Comparator.comparing(TimeWindow::start))
                 .toList();
-        return windows.isEmpty() ? List.of(SoloScheduleRules.defaultDayWindow(date)) : merge(windows);
+        return windows.isEmpty()
+                ? List.of(new TimeWindow(date.atTime(settingService.openTime()),
+                        date.atTime(settingService.closeTime())))
+                : merge(windows);
     }
 
     /** 当天已占用窗口，可按 id 排除某单（改期 / 顺延时排除自己）。 */

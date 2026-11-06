@@ -1,3 +1,4 @@
+import axios from 'axios'
 import request from './request'
 
 /**
@@ -153,4 +154,40 @@ export function fetchFinanceDeposits(month) {
 
 export function recordMoneyFlow(data) {
   return request.post('/solo/finance/flows', data)
+}
+
+// ---------------------------------------------------------------- P7：设置 / 提醒 / 导入导出
+export function fetchSettings() {
+  return request.get('/solo/settings')
+}
+
+export function saveSettings(data) {
+  return request.put('/solo/settings', data)
+}
+
+export function fetchReminders(date) {
+  return request.get('/solo/reminders', { params: { date } })
+}
+
+export function previewClientImport(csv) {
+  return request.post('/solo/clients/import/preview', { csv })
+}
+
+export function importClients(csv) {
+  return request.post('/solo/clients/import', { csv })
+}
+
+export function seedDemoData() {
+  return request.post('/solo/demo')
+}
+
+/**
+ * CSV 下载：走裸 axios，绕开 request.js 的 code!==200 拦截（二进制响应没有 code），
+ * 但仍然带 JWT，否则后端会 401。
+ */
+export function downloadCsv(kind) {
+  return axios.get(`/api/solo/export/${kind}.csv`, {
+    responseType: 'blob',
+    headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
+  })
 }

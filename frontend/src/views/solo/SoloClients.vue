@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SoloLayout from './SoloLayout.vue'
 import SoloSheet from '../../components/solo/SoloSheet.vue'
+import CsvImportSheet from '../../components/solo/CsvImportSheet.vue'
 import * as api from '../../api/solo'
 import { toKey } from '../../utils/date'
 
@@ -19,6 +20,7 @@ const keyword = ref('')
 const clients = ref([])
 const loading = ref(false)
 const createVisible = ref(false)
+const importVisible = ref(false)
 const submitting = ref(false)
 
 const form = ref(emptyForm())
@@ -133,6 +135,7 @@ function lastVisitText(client) {
         type="search"
         placeholder="搜客户…（#C001 / 阿岚 / 8821）"
       />
+      <button type="button" class="ghost-btn" @click="importVisible = true">导入</button>
       <button type="button" class="create-btn" @click="openCreate">＋ 新建</button>
     </div>
 
@@ -164,6 +167,12 @@ function lastVisitText(client) {
         <span v-if="client.colorNotes" class="client-color">色号 {{ client.colorNotes }}</span>
       </button>
     </div>
+
+    <CsvImportSheet
+      :visible="importVisible"
+      @update:visible="importVisible = $event"
+      @imported="load"
+    />
 
     <SoloSheet
       :visible="createVisible"
@@ -257,6 +266,18 @@ function lastVisitText(client) {
 
 .search:focus {
   border-bottom-color: var(--lacquer);
+}
+
+.ghost-btn {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .create-btn {

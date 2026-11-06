@@ -32,7 +32,6 @@ const schedule = ref(null)
 const styles = ref([])
 const styleMap = ref({})
 const usageMap = ref({})
-const tomorrow = ref(null)
 
 const createVisible = ref(false)
 const presetTime = ref('')
@@ -69,7 +68,7 @@ async function load() {
   } finally {
     loading.value = false
   }
-  loadTomorrow()
+  loadReminders()
 }
 
 /** 每单领用了几件料。单量小，逐单取比新增聚合接口更省事。 */
@@ -86,15 +85,6 @@ async function loadUsage() {
     })
   )
   usageMap.value = Object.fromEntries(entries)
-}
-
-async function loadTomorrow() {
-  try {
-    const response = await api.fetchDaySchedule(toKey(addDays(new Date(), 1)))
-    tomorrow.value = response.data.data
-  } catch (error) {
-    tomorrow.value = null
-  }
 }
 
 onMounted(load)
@@ -184,38 +174,29 @@ function coverOf(booking) {
 // ------------------------------------------------------------------ 提醒
 
 /**
- * 「今天要发的提醒」：今日未到店 + 明日预约，每条配一句可直接发的话术。
- * 昨日未确认那部分依赖 P7 的提醒接口，这里先不做。
+ * 「今天要发的提醒」交给后端算：昨日未确认 / 今日 / 明日三组，
+ * 每组带一句现成话术，点一下就复制。
  */
-const reminders = computed(() => {
-  const list = []
-  const now = new Date()
-  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+const reminderBoard = ref({ yesterday: [], today: [], tomorrow: [] })
 
-  const push = (booking, when) => {
-    const styleNames = (booking.items || []).map((item) => item.styleName).join(' + ')
-    const what = styleNames ? `到店做${styleNames}` : '到店'
-    const time = timeText(booking.startAt)
-    const name = booking.clientNickname
-    const text =
-      booking.status === 'WAIT_DEPOSIT'
-        ? `Hi ${name}，${when} ${time} 的档期先给你留着啦，定金 30 微信转我就锁档～`
-        : `Hi ${name}，提醒一下${when} ${time} ${what}，我这边把档期留着，有变化提前说一声～`
-    list.push({ key: `${when}-${booking.id}`, when, time, code: booking.clientCode, name, text })
+const reminderGroups = computed(() => [
+  { key: 'yesterday', label: '昨日未确认', items: reminderBoard.value.yesterday || [] },
+  { key: 'today', label: '今天', items: reminderBoard.value.today || [] },
+  { key: 'tomorrow', label: '明天', items: reminderBoard.value.tomorrow || [] }
+])
+
+const reminderTotal = computed(() =>
+  reminderGroups.value.reduce((sum, group) => sum + group.items.length, 0)
+)
+
+async function loadReminders() {
+  try {
+    const response = await api.fetchReminders(date.value)
+    reminderBoard.value = response.data.data
+  } catch (error) {
+    reminderBoard.value = { yesterday: [], today: [], tomorrow: [] }
   }
-
-  // 今天只提醒还没开始的单，已经过点的不再发
-  activeBookings.value
-    .filter((booking) => ['BOOKED', 'WAIT_DEPOSIT'].includes(booking.status))
-    .filter((booking) => minutesOf(booking.startAt) >= nowMinutes)
-    .forEach((booking) => push(booking, '今天'))
-
-  ;(tomorrow.value?.bookings || [])
-    .filter((booking) => ['BOOKED', 'WAIT_DEPOSIT'].includes(booking.status))
-    .forEach((booking) => push(booking, '明天'))
-
-  return list
-})
+}
 
 async function copyText(text) {
   try {
@@ -466,20 +447,26 @@ const weekdayText = computed(() => {
     <section class="reminders">
       <button type="button" class="fold" @click="remindersOpen = !remindersOpen">
         <span class="fold-title">今天要发的提醒</span>
-        <span class="fold-count mono">{{ reminders.length }}</span>
+        <span class="fold-count mono">{{ reminderTotal }}</span>
         <span class="fold-arrow" :class="{ 'is-open': remindersOpen }">⌄</span>
       </button>
 
       <div v-if="remindersOpen" class="fold-body">
-        <p v-if="!reminders.length" class="empty-line">今天没有要发的微信，安心做指甲。</p>
-        <article v-for="item in reminders" :key="item.key" class="reminder">
-          <div class="reminder-head">
-            <span class="reminder-when">{{ item.when }} {{ item.time }}</span>
-            <span class="reminder-name">{{ item.code }} {{ item.name }}</span>
-          </div>
-          <p class="reminder-text">{{ item.text }}</p>
-          <button type="button" class="copy-btn" @click="copyText(item.text)">复制话术</button>
-        </article>
+        <p v-if="!reminderTotal" class="empty-line">今天没有要发的微信，安心做指甲。</p>
+
+        <div v-for="group in reminderGroups" :key="group.key">
+          <p v-if="group.items.length" class="group-title">
+            {{ group.label }} <span class="mono">{{ group.items.length }}</span>
+          </p>
+          <article v-for="item in group.items" :key="`${group.key}-${item.bookingId}`" class="reminder">
+            <div class="reminder-head">
+              <span class="reminder-when">{{ group.label }} {{ timeText(item.startAt) }}</span>
+              <span class="reminder-name">{{ item.clientCode }} {{ item.clientNickname }}</span>
+            </div>
+            <p class="reminder-text">{{ item.script }}</p>
+            <button type="button" class="copy-btn" @click="copyText(item.script)">复制话术</button>
+          </article>
+        </div>
       </div>
     </section>
       </aside>
@@ -834,8 +821,20 @@ const weekdayText = computed(() => {
   padding-bottom: var(--s4);
 }
 
+.group-title {
+  margin-top: var(--s2);
+  color: var(--lacquer);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.group-title .mono {
+  color: var(--ink-4);
+  font-size: 9px;
+}
+
 .reminder {
-  padding: var(--s3) 0;
+  padding: var(--s2) 0;
   border-top: 1px solid var(--line-soft);
 }
 

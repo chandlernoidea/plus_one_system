@@ -69,6 +69,7 @@ public class BookingService {
     private final BookingGuard guard;
     private final SlotAvailabilityService slotAvailability;
     private final DepositService depositService;
+    private final SoloSettingService settingService;
 
     // ------------------------------------------------------------------ 查询
 
@@ -182,7 +183,8 @@ public class BookingService {
         LocalDateTime now = LocalDateTime.now();
         long hoursBefore = SoloScheduleRules.hoursBefore(now, booking.getStartAt());
         boolean freeUsed = Integer.valueOf(1).equals(booking.getFreeRescheduleUsed());
-        boolean free = SoloScheduleRules.isFreeReschedule(hoursBefore, freeUsed);
+        int freeHours = settingService.freeRescheduleHours();
+        boolean free = SoloScheduleRules.isFreeReschedule(hoursBefore, freeUsed, freeHours);
         String decision = depositService.normalizeDecision(request.getDepositDecision());
 
         if (!free && SoloChangeDepositAction.NONE.equals(decision)) {
@@ -193,8 +195,8 @@ public class BookingService {
                     .hoursBefore(hoursBefore)
                     .message("距开始 %d 小时，%s，改期需扣 %s 元定金：请选择退还（REFUND）/ 没收（FORFEIT）/ 仍免费（FREE）"
                             .formatted(hoursBefore,
-                                    freeUsed ? "免费改期已经用过" : "不足 48 小时",
-                                    DepositService.STANDARD_AMOUNT.toPlainString()))
+                                    freeUsed ? "免费改期已经用过" : "不足 %d 小时".formatted(settingService.freeRescheduleHours()),
+                                    settingService.depositAmount().toPlainString()))
                     .booking(toResponses(List.of(booking)).get(0))
                     .build();
         }
@@ -544,7 +546,7 @@ public class BookingService {
 
     private int resolveBuffer(BookingCreateRequest request) {
         return request.getBufferMinutes() == null
-                ? SoloScheduleRules.DEFAULT_BUFFER_MINUTES
+                ? settingService.bufferMinutes()
                 : request.getBufferMinutes();
     }
 

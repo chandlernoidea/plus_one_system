@@ -2,15 +2,18 @@ package com.nail.demo.solo.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.nail.demo.exception.BusinessException;
 import com.nail.demo.solo.common.SoloBookingStatus;
 import com.nail.demo.solo.dto.BookingResponse;
 import com.nail.demo.solo.dto.ClientCreateRequest;
 import com.nail.demo.solo.dto.ClientDetailResponse;
+import com.nail.demo.solo.dto.ClientImportResponse;
 import com.nail.demo.solo.dto.ClientResponse;
 import com.nail.demo.solo.dto.ClientUpdateRequest;
 import com.nail.demo.solo.entity.Booking;
@@ -47,6 +50,144 @@ public class ClientService {
     @Transactional(readOnly = true)
     public ClientResponse get(Long id) {
         return toResponse(requireClient(id));
+    }
+
+    /**
+     * CSV 导入预览：逐行解析 + 标出同名（和库里重、或文件内前面行重）。
+     *
+     * <p>列顺序：昵称, 手机后四位, 来源, 备注。首行是表头会自动跳过。
+     */
+    @Transactional(readOnly = true)
+    public ClientImportResponse previewImport(String csv) {
+        List<ClientImportResponse.Row> rows = parseCsv(csv);
+        int duplicates = (int) rows.stream().filter(ClientImportResponse.Row::isDuplicate).count();
+        return ClientImportResponse.builder()
+                .rows(rows)
+                .total(rows.size())
+                .duplicates(duplicates)
+                .build();
+    }
+
+    /** 确认导入：只建合法的行，短号接着往后发，重名的照建（名字是老板的事）。 */
+    @Transactional
+    public ClientImportResponse.Result importClients(String csv) {
+        List<ClientImportResponse.Row> rows = parseCsv(csv);
+        List<String> codes = new ArrayList<>();
+        int skipped = 0;
+        Set<String> usedCodes = new HashSet<>();
+
+        long seq = clientRepository.findTopByOrderByIdDesc().map(Client::getId).orElse(0L);
+        for (ClientImportResponse.Row row : rows) {
+            if (!row.isValid()) {
+                skipped++;
+                continue;
+            }
+            String code;
+            do {
+                seq++;
+                code = format(seq);
+            } while (usedCodes.contains(code) || clientRepository.existsByCode(code));
+            usedCodes.add(code);
+
+            Client client = new Client();
+            client.setCode(code);
+            client.setNickname(row.getNickname());
+            client.setPhoneTail(StringUtils.hasText(row.getPhoneTail()) ? row.getPhoneTail() : null);
+            client.setSource(StringUtils.hasText(row.getSource()) ? row.getSource() : null);
+            client.setRemark(StringUtils.hasText(row.getRemark()) ? row.getRemark() : null);
+            client.setDeleted(0);
+            clientRepository.save(client);
+            codes.add(code);
+        }
+        return ClientImportResponse.Result.builder()
+                .created(codes.size())
+                .skipped(skipped)
+                .codes(codes)
+                .build();
+    }
+
+    private List<ClientImportResponse.Row> parseCsv(String csv) {
+        List<ClientImportResponse.Row> rows = new ArrayList<>();
+        if (!StringUtils.hasText(csv)) {
+            return rows;
+        }
+        Set<String> seen = new HashSet<>();
+        clientRepository.findByDeletedOrderByLastVisitDateDescIdDesc(0)
+                .forEach(client -> seen.add(client.getNickname()));
+
+        String[] lines = csv.replace("\uFEFF", "").split("\r?\n");
+        int lineNo = 0;
+        for (String line : lines) {
+            if (!StringUtils.hasText(line)) {
+                continue;
+            }
+            lineNo++;
+            List<String> cells = splitCsvLine(line);
+            String nickname = cells.isEmpty() ? "" : cells.get(0);
+            if (lineNo == 1 && isHeader(nickname)) {
+                continue;
+            }
+            String phoneTail = cells.size() > 1 ? cells.get(1) : "";
+            String source = cells.size() > 2 ? cells.get(2) : "";
+            String remark = cells.size() > 3 ? cells.get(3) : "";
+
+            boolean valid = StringUtils.hasText(nickname)
+                    && (!StringUtils.hasText(phoneTail) || phoneTail.matches("\\d{4}"));
+            boolean duplicate = StringUtils.hasText(nickname) && seen.contains(nickname);
+
+            String note;
+            if (!StringUtils.hasText(nickname)) {
+                note = "昵称空着，跳过";
+            } else if (!valid) {
+                note = "手机后四位要 4 位数字";
+            } else if (duplicate) {
+                note = "同名，建议加区分词";
+            } else {
+                note = "";
+            }
+
+            rows.add(ClientImportResponse.Row.builder()
+                    .line(lineNo)
+                    .nickname(nickname)
+                    .phoneTail(phoneTail)
+                    .source(source)
+                    .remark(remark)
+                    .duplicate(duplicate)
+                    .valid(valid)
+                    .note(note)
+                    .build());
+
+            if (StringUtils.hasText(nickname)) {
+                seen.add(nickname);
+            }
+        }
+        return rows;
+    }
+
+    private boolean isHeader(String first) {
+        return "昵称".equals(first) || "nickname".equalsIgnoreCase(first) || "name".equalsIgnoreCase(first);
+    }
+
+    /** 极简 CSV 切分：支持双引号包住的逗号，够导入名片用。 */
+    private List<String> splitCsvLine(String line) {
+        List<String> cells = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean quoted = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                quoted = !quoted;
+                continue;
+            }
+            if (c == ',' && !quoted) {
+                cells.add(current.toString().trim());
+                current.setLength(0);
+                continue;
+            }
+            current.append(c);
+        }
+        cells.add(current.toString().trim());
+        return cells;
     }
 
     /** 同名客户：新建时提示「重名了，加个区分词（如 阿岚-长甲）」。 */

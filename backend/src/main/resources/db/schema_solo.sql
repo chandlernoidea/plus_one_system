@@ -239,3 +239,15 @@ SET @solo_client_color_notes_ddl = IF(
 PREPARE solo_client_color_notes_stmt FROM @solo_client_color_notes_ddl;
 EXECUTE solo_client_color_notes_stmt;
 DEALLOCATE PREPARE solo_client_color_notes_stmt;
+
+-- ------------------------------------------------------------
+-- P7 设置：营业模板 / 缓冲 / 定金 / 免费改期阈值，键值对存
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS solo_setting (
+    id            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    setting_key   VARCHAR(50)  NOT NULL COMMENT '键：open_time / close_time / buffer_minutes / deposit_amount / free_reschedule_hours',
+    setting_value VARCHAR(200) NOT NULL COMMENT '值',
+    updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_solo_setting_key (setting_key)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '单人版设置';

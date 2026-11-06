@@ -12,6 +12,7 @@ import SoloClientDetail from '../views/solo/SoloClientDetail.vue'
 import SoloStyles from '../views/solo/SoloStyles.vue'
 import SoloMaterials from '../views/solo/SoloMaterials.vue'
 import SoloFinance from '../views/solo/SoloFinance.vue'
+import SoloSettings from '../views/solo/SoloSettings.vue'
 
 /** 免登录页面：单人版专用登录 + 多角色演示登录 */
 const PUBLIC_PATHS = ['/solo/login', '/login']
@@ -105,6 +106,12 @@ const router = createRouter({
       path: '/solo/finance',
       name: 'SoloFinance',
       component: SoloFinance,
+      meta: { role: 'ADMIN' }
+    },
+    {
+      path: '/solo/settings',
+      name: 'SoloSettings',
+      component: SoloSettings,
       meta: { role: 'ADMIN' }
     },
     {
