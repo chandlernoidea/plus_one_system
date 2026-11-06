@@ -110,6 +110,14 @@
   守卫只认 ADMIN——残留的 staff / customer 登录态会被清掉再引导登录。
 - 登录页「填入演示账号」改为只填账号名：部署后初始密码已替换，连密码一起填会误导。
 
+### 运维
+
+- 新增 `docs/solo/OPS.md`：日常命令、备份恢复与演练、巡检清单、故障处理手册、安全基线与待办。
+- 线上服务器安全加固（2026-11-07）：应用全部安全补丁（含内核 6.1.0-54，需重启生效）、
+  启用 ufw（仅 22/80/443）、fail2ban 增加 recidive、SSH 收紧（MaxAuthTries 3 / 关 X11 与 agent 转发）、
+  内核参数加固、MariaDB 关闭 local_infile 并清理匿名账号、nginx 隐藏版本 + CSP + 登录限速 10 次/分、
+  收紧目录权限、轮换 root 密码。
+
 ### 接口规范
 
 - 设置接口的入参从 `SettingsResponse` 拆出 `SettingsRequest`，校验注解落在请求体上。
