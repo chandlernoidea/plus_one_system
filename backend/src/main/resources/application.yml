@@ -32,7 +32,7 @@ spring:
       # 阶段 0 每次启动都执行初始化脚本；脚本使用幂等写法，可重复执行。
       # 若首次启动后 data.sql 仍有主键冲突，可将 always 改为 never。
       mode: always
-      schema-locations: classpath:db/schema.sql
+      schema-locations: classpath:db/schema.sql,classpath:db/schema_solo.sql
       data-locations: classpath:db/data.sql
       encoding: UTF-8
 
