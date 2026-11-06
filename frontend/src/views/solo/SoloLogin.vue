@@ -45,9 +45,9 @@ async function submit() {
   }
 }
 
+/** 只填账号名：密码按实例不同（部署后已经改掉初始口令），不替用户填。 */
 function fillDemo() {
   form.username = 'admin'
-  form.password = '123456'
 }
 </script>
 
@@ -96,8 +96,7 @@ function fillDemo() {
       </form>
 
       <footer class="foot">
-        <button type="button" class="link" @click="fillDemo">填入演示账号</button>
-        <router-link class="link" to="/login">多角色演示入口 →</router-link>
+        <button type="button" class="link" @click="fillDemo">填入账号</button>
       </footer>
     </section>
 

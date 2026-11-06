@@ -1,9 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../store/user'
-import Login from '../views/Login.vue'
-import AdminHome from '../views/AdminHome.vue'
-import StaffHome from '../views/StaffHome.vue'
-import CustomerHome from '../views/CustomerHome.vue'
 import SoloLogin from '../views/solo/SoloLogin.vue'
 import SoloToday from '../views/solo/SoloToday.vue'
 import SoloSchedule from '../views/solo/SoloSchedule.vue'
@@ -14,48 +10,17 @@ import SoloMaterials from '../views/solo/SoloMaterials.vue'
 import SoloFinance from '../views/solo/SoloFinance.vue'
 import SoloSettings from '../views/solo/SoloSettings.vue'
 
-/** 免登录页面：单人版专用登录 + 多角色演示登录 */
-const PUBLIC_PATHS = ['/solo/login', '/login']
-
-/**
- * 单人版分支：管理员登录后直接落在「今天」。
- * 多角色页面仍保留（答辩用 main 分支，这里只是不抢占入口）。
- */
-const ROLE_HOME = Object.freeze({
-  ADMIN: '/solo/today',
-  STAFF: '/staff',
-  CUSTOMER: '/customer'
-})
-
-function homeForRole(roleCode) {
-  return ROLE_HOME[roleCode] || ''
-}
+/** 免登录页面：只有单人版登录 */
+const PUBLIC_PATHS = ['/solo/login']
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    // 多角色演示页留给 main 分支，本分支不挂路由：
+    // 之前挂在 /login、/staff、/customer，点进去后没有任何回单人版的入口，成了死胡同。
     {
       path: '/login',
-      name: 'Login',
-      component: Login
-    },
-    {
-      path: '/admin',
-      name: 'AdminHome',
-      component: AdminHome,
-      meta: { role: 'ADMIN' }
-    },
-    {
-      path: '/staff',
-      name: 'StaffHome',
-      component: StaffHome,
-      meta: { role: 'STAFF' }
-    },
-    {
-      path: '/customer',
-      name: 'CustomerHome',
-      component: CustomerHome,
-      meta: { role: 'CUSTOMER' }
+      redirect: '/solo/login'
     },
     {
       path: '/solo',
@@ -117,6 +82,11 @@ const router = createRouter({
     {
       path: '/',
       redirect: '/solo/today'
+    },
+    {
+      // 任何不认识的地址都回到首页，避免停在空白页
+      path: '/:pathMatch(.*)*',
+      redirect: '/solo/today'
     }
   ]
 })
@@ -124,27 +94,18 @@ const router = createRouter({
 router.beforeEach((to) => {
   const userStore = useUserStore()
 
+  // 单人版只有老板：历史上残留的 staff/customer 登录态直接清掉，
+  // 否则会卡在一个已经没有入口的页面上，退不出来。
+  if (userStore.isLoggedIn && userStore.roleCode !== 'ADMIN') {
+    userStore.logout()
+  }
+
   if (!userStore.isLoggedIn) {
     return PUBLIC_PATHS.includes(to.path) ? true : '/solo/login'
   }
 
-  const ownHome = homeForRole(userStore.roleCode)
-
   if (PUBLIC_PATHS.includes(to.path)) {
-    if (ownHome) {
-      return ownHome
-    }
-    userStore.logout()
-    return true
-  }
-
-  const requiredRole = to.meta.role
-  if (requiredRole && userStore.roleCode !== requiredRole) {
-    if (ownHome) {
-      return ownHome
-    }
-    userStore.logout()
-    return '/login'
+    return '/solo/today'
   }
 
   return true
