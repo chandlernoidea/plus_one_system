@@ -5,7 +5,7 @@
  * 为什么不做「7 列等比时间轴」：390px 手机每列只剩 50px，画出来什么都看不清。
  * 所以格子里的预约统一用彩色横条表示（颜色＝状态），点横条看详情，点格子看当天明细。
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SoloLayout from './SoloLayout.vue'
@@ -98,6 +98,16 @@ const rangeTotals = computed(() => {
     count: active.length,
     minutes: active.reduce((sum, booking) => sum + (booking.plannedMinutes || 0), 0)
   }
+})
+
+/** 现在看的是不是当前周期（月视图比年月，周视图比周一） */
+const isCurrentPeriod = computed(() => {
+  const anchorDate = fromKey(anchor.value)
+  const now = new Date()
+  if (mode.value === 'month') {
+    return anchorDate.getFullYear() === now.getFullYear() && anchorDate.getMonth() === now.getMonth()
+  }
+  return toKey(startOfWeek(anchorDate)) === toKey(startOfWeek(now))
 })
 
 const title = computed(() => {
@@ -214,19 +224,36 @@ onMounted(async () => {
   await loadPending()
 })
 
-watch(mode, async () => {
-  await loadCalendar()
-})
-
 function selectDate(date) {
   selectedDate.value = date
   loadDay(date)
 }
 
-function shiftRange(direction) {
+/**
+ * 翻页 / 切视图之后，选中的那一天可能已经不在当前范围里了（明细还停在上一页）。
+ * 这里把它拉回来：优先「今天」，其次月视图取 1 号、周视图取周一。
+ */
+async function ensureSelectedInRange() {
+  const days = visibleDays.value.map((day) => day.date)
+  if (days.includes(selectedDate.value)) {
+    return
+  }
+  const today = days.includes(todayKey) ? todayKey : null
+  const first = mode.value === 'month'
+    ? days.find((date) => date.slice(8) === '01') || days[0]
+    : days[0]
+  const target = today || first
+  if (target) {
+    selectedDate.value = target
+    await loadDay(target)
+  }
+}
+
+async function shiftRange(direction) {
   const base = fromKey(anchor.value)
   anchor.value = toKey(mode.value === 'month' ? addMonths(base, direction) : addDays(base, direction * 7))
-  loadCalendar()
+  await loadCalendar()
+  await ensureSelectedInRange()
 }
 
 function goToday() {
@@ -235,8 +262,10 @@ function goToday() {
   loadCalendar()
 }
 
-function switchMode(next) {
+async function switchMode(next) {
   mode.value = next
+  await loadCalendar()
+  await ensureSelectedInRange()
 }
 
 function openBooking(booking) {
@@ -335,7 +364,15 @@ function toneOf(status) {
 
       <div class="navs">
         <button type="button" class="nav-btn" @click="shiftRange(-1)">‹</button>
-        <button type="button" class="nav-btn" @click="goToday">今天</button>
+        <button
+          type="button"
+          class="nav-btn nav-btn--now"
+          :class="{ 'is-current': isCurrentPeriod }"
+          :disabled="isCurrentPeriod"
+          @click="goToday"
+        >
+          {{ mode === 'month' ? '本月' : '本周' }}
+        </button>
         <button type="button" class="nav-btn" @click="shiftRange(1)">›</button>
       </div>
     </div>
@@ -577,8 +614,19 @@ function toneOf(status) {
   font-size: 12px;
 }
 
-.nav-btn:hover {
+.nav-btn:hover:not(:disabled) {
   border-color: var(--ink);
+}
+
+.nav-btn--now {
+  min-width: 46px;
+}
+
+.nav-btn.is-current,
+.nav-btn:disabled {
+  border-color: var(--line-soft);
+  color: var(--ink-4);
+  cursor: default;
 }
 
 .detail {

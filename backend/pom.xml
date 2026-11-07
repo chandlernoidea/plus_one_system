@@ -13,7 +13,7 @@
 
     <groupId>com.nail</groupId>
     <artifactId>nail-demo-backend</artifactId>
-    <version>0.8.6</version>
+    <version>0.8.7</version>
     <name>nail-demo-backend</name>
     <description>预约制美甲管理系统后端</description>
 
