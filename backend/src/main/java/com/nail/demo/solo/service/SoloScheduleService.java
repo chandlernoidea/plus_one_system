@@ -4,13 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.nail.demo.exception.BusinessException;
 import com.nail.demo.solo.common.SoloBookingStatus;
 import com.nail.demo.solo.common.SoloPurchaseStatus;
 import com.nail.demo.solo.dto.BookingResponse;
+import com.nail.demo.solo.dto.CalendarRangeResponse;
 import com.nail.demo.solo.dto.DayScheduleResponse;
 import com.nail.demo.solo.dto.WeekScheduleResponse;
 import com.nail.demo.solo.entity.Booking;
 import com.nail.demo.solo.entity.SlotBlock;
+import com.nail.demo.solo.repository.BookingRepository;
 import com.nail.demo.solo.repository.MaterialItemRepository;
 import com.nail.demo.solo.repository.SlotBlockRepository;
 import com.nail.demo.solo.support.SoloScheduleRules;
@@ -30,6 +33,7 @@ public class SoloScheduleService {
     private static final int WEEK_DAYS = 7;
 
     private final SlotBlockRepository slotBlockRepository;
+    private final BookingRepository bookingRepository;
     private final SlotAvailabilityService slotAvailability;
     private final BookingService bookingService;
     private final MaterialItemRepository materialItemRepository;
@@ -82,6 +86,41 @@ public class SoloScheduleService {
                         .mapToObj(offset -> day(start.plusDays(offset)))
                         .toList())
                 .build();
+    }
+
+    /**
+     * 日历视图：给一段日期，按天分组返回预约（含已取消/爽约，前端画淡）。
+     * 最多一次 62 天（两个月），够画月视图的 6 行格子。
+     */
+    public CalendarRangeResponse calendar(LocalDate from, LocalDate to) {
+        LocalDate start = from == null ? LocalDate.now() : from;
+        LocalDate end = to == null ? start.plusDays(WEEK_DAYS - 1L) : to;
+        if (end.isBefore(start)) {
+            throw new BusinessException("结束日期不能早于开始日期");
+        }
+        if (java.time.temporal.ChronoUnit.DAYS.between(start, end) > 62) {
+            throw new BusinessException("一次最多查 62 天");
+        }
+
+        List<Booking> bookings = bookingRepository.findByStartAtBetweenOrderByStartAtAsc(
+                start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        // 复用预约返回体，前端拿到的字段和作业单一致（客户、项目、定金都在）
+        java.util.Map<LocalDate, List<BookingResponse>> byDate = bookingService.toResponses(bookings).stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        view -> view.getStartAt().toLocalDate()));
+
+        List<CalendarRangeResponse.DayBookings> days = java.util.stream.IntStream
+                .range(0, (int) java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1)
+                .mapToObj(offset -> {
+                    LocalDate date = start.plusDays(offset);
+                    return CalendarRangeResponse.DayBookings.builder()
+                            .date(date)
+                            .bookings(byDate.getOrDefault(date, List.of()))
+                            .build();
+                })
+                .toList();
+
+        return CalendarRangeResponse.builder().from(start).to(end).days(days).build();
     }
 
     private DayScheduleResponse.Window toWindow(TimeWindow window) {

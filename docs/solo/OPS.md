@@ -93,7 +93,7 @@ ls -lh /opt/one-finger/backups/
 ssh root@服务器
 cp /opt/one-finger/backend/app.jar /opt/one-finger/backend/app.jar.bad
 # 换回上一个版本（如果你留了旧 jar）
-cp /opt/one-finger/backend/nail-demo-backend-0.8.5.jar /opt/one-finger/backend/app.jar
+cp /opt/one-finger/backend/nail-demo-backend-0.8.6.jar /opt/one-finger/backend/app.jar
 systemctl restart one-finger
 ```
 

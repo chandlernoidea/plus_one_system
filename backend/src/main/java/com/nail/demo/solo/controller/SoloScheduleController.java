@@ -3,6 +3,7 @@ package com.nail.demo.solo.controller;
 import java.time.LocalDate;
 
 import com.nail.demo.common.ApiResponse;
+import com.nail.demo.solo.dto.CalendarRangeResponse;
 import com.nail.demo.solo.dto.DayScheduleResponse;
 import com.nail.demo.solo.dto.WeekScheduleResponse;
 import com.nail.demo.solo.service.SoloScheduleService;
@@ -32,6 +33,14 @@ public class SoloScheduleController {
     }
 
     /** 周视图：从 from 起 7 天。 */
+    /** 日历（月 / 周）视图：一段日期内按天分组的预约，够画格子就行。 */
+    @GetMapping("/calendar")
+    public ApiResponse<CalendarRangeResponse> calendar(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate from,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate to) {
+        return ApiResponse.success(scheduleService.calendar(from, to));
+    }
+
     @GetMapping("/week")
     public ApiResponse<WeekScheduleResponse> week(
             @RequestParam(required = false)

@@ -10,6 +10,11 @@ export function fetchDaySchedule(date) {
   return request.get('/solo/schedule/day', { params: { date } })
 }
 
+/** 日历（月/周）视图：一段日期内按天分组的预约，够画格子就行 */
+export function fetchCalendar(from, to) {
+  return request.get('/solo/schedule/calendar', { params: { from, to } })
+}
+
 export function fetchWeekSchedule(from) {
   return request.get('/solo/schedule/week', { params: { from } })
 }

@@ -38,7 +38,7 @@ table {
 th, td { border: 1px solid #e0d8c8; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
 th { background: #f5f1e8; font-weight: 600; }
 hr { border: 0; border-top: 1px solid #ddd6c8; margin: 7mm 0; }
-img { max-height: 96mm; max-width: 45%; border: 1px solid #e4dccd; border-radius: 2mm; margin: 2mm 0; }
+img { max-height: 112mm; max-width: 52%; border: 1px solid #e4dccd; border-radius: 2mm; margin: 2mm 0; }
 ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
 li { margin-bottom: 1mm; }
 .toc-note { color: #6b6459; font-size: 10pt; }
@@ -69,7 +69,7 @@ h2, h3 { page-break-after: avoid; }
 <li><a href="#五一天的流程最常用">五、一天的流程（最常用）</a></li>
 <li><a href="#六定金收了以后可能出现的三种结局">六、定金：收了以后可能出现的三种结局</a></li>
 <li><a href="#七客户档案">七、客户档案</a></li>
-<li><a href="#八看整周插单往后顺延">八、看整周、插单、往后顺延</a></li>
+<li><a href="#八看日历插单往后顺延">八、看日历、插单、往后顺延</a></li>
 <li><a href="#九材料今天要买什么这单用了什么">九、材料：今天要买什么、这单用了什么</a></li>
 <li><a href="#十算账">十、算账</a></li>
 <li><a href="#十一每天三组要发的微信">十一、每天三组要发的微信</a></li>
@@ -105,7 +105,7 @@ h2, h3 { page-break-after: avoid; }
 <p><img alt="今天" src="../screenshots/use-today.png"></p>
 <table><thead><tr><th>入口</th><th>里面是什么</th></tr></thead><tbody>
 <tr><td><strong>今天</strong></td><td>今天的排期，一单一单排下来，中间的空当写着「可塞 N 分钟」</td></tr>
-<tr><td><strong>排期</strong></td><td>一整个星期 7 列，一眼看出哪天满、哪天有空</td></tr>
+<tr><td><strong>排期</strong></td><td>日历。可以按月看，也可以按周看，有单的日子会显示彩色横条</td></tr>
 <tr><td><strong>客户</strong></td><td>你所有的客人，按「最近到访」排序</td></tr>
 </tbody></table>
 <h3>2. 顶部四个入口</h3>
@@ -308,11 +308,36 @@ h2, h3 { page-break-after: avoid; }
 <p>删掉的只是「这个人」，账不会消失。她的历史单子上会显示成「<strong>客户已删除</strong>」，金额、定金、流水都还在。</p>
 <blockquote><p>删错了没有「撤销」。重新建一个同名客户，<strong>不会</strong>把旧记录接上——新档案是空的，看不到她以前的「做过的款」。</p><p>所以删之前想一下：只是不想再看到，还是真的要清掉。</p></blockquote>
 <hr>
-<h2>八、看整周、插单、往后顺延</h2>
-<h3>看整周</h3>
-<p>底部点「<strong>排期</strong>」，一屏 7 列，看哪天满、哪天有空。上方可以「上周」「下周」。</p>
-<p><img alt="周排期" src="../screenshots/use-week.png"></p>
-<p>点某一天，下面出当天的明细。</p>
+<h2>八、看日历、插单、往后顺延</h2>
+<h3>看日历</h3>
+<p>底部点「<strong>排期</strong>」。左上角可以切换「<strong>月</strong>」和「<strong>周</strong>」：</p>
+<p><img alt="月视图" src="../screenshots/use-calendar.png"></p>
+<ul>
+<li><strong>月视图</strong>：一整个月的格子，有单的日子会显示<strong>彩色横条</strong>，条数多就变成「+1」「+2」</li>
+<li><strong>周视图</strong>：7 列，每根横条上写着开始时间</li>
+</ul>
+<p><img alt="周视图" src="../screenshots/use-week.png"></p>
+<p><strong>颜色代表这一单到哪一步了</strong>，图例就在日历下面：</p>
+<table><thead><tr><th>颜色</th><th>意思</th></tr></thead><tbody>
+<tr><td>琥珀色</td><td>待定金</td></tr>
+<tr><td>深蓝色</td><td>已定档</td></tr>
+<tr><td>青色</td><td>已到店</td></tr>
+<tr><td>墨绿色</td><td>服务中</td></tr>
+<tr><td>灰色</td><td>已完成</td></tr>
+<tr><td>红色</td><td>爽约</td></tr>
+<tr><td>斜纹</td><td>已取消（不占档期）</td></tr>
+</tbody></table>
+<p>左右两个「<strong>‹</strong>」「<strong>›</strong>」翻月 / 翻周，中间「<strong>今天</strong>」一键回到本月（周）。</p>
+<h3>看某一天的详情</h3>
+<p>点日历里任意一格，下面就会展开那天的明细（空档 + 预约）。 或者直接点某一根<strong>彩色横条</strong>，会弹出这一单的信息：</p>
+<p><img alt="点横条看详情" src="../screenshots/use-calendar-detail.png"></p>
+<pre><code>#C002  阿岚                    已定档
+时间   14:00 – 15:50（90 分钟 + 缓冲 20）
+项目   法式裸粉
+金额   ¥168
+定金   未收
+[关闭]  [打开作业单]</code></pre>
+<p>点「<strong>打开作业单</strong>」就跳到那天，可以改时间、收定金、点完成。</p>
 <h3>插单（临时来了个客人）</h3>
 <p>点「<strong>插一单 ↗</strong>」——只有在<strong>空当够长</strong>的时候才会出现这个按钮。 点进去填的跟建单一样，系统会自己检查塞不塞得下。</p>
 <h3>往后顺延（今天做不完了）</h3>
@@ -456,6 +481,7 @@ h2, h3 { page-break-after: avoid; }
 <tr><td>「今天要买什么」是空的</td><td>款式里没登记材料清单，去款式库补</td></tr>
 <tr><td>领料时选不到物料</td><td>库存里还没有这条，先去「物料 → ＋ 新建」录一条</td></tr>
 <tr><td>卡片上的「开始」「完成」不见了</td><td>按钮<strong>按阶段出现</strong>：先点「到店」才有「开始」，点「开始」才有「完成」</td></tr>
+<tr><td>日历上的彩色横条是什么意思</td><td>颜色＝状态，日历下面有图例；点横条能看这一单的详情</td></tr>
 <tr><td>建完单找不到那一单</td><td>看看是不是排到别的日子了：点「后一天」，或去「排期」页翻到那天</td></tr>
 <tr><td>记错了金额 / 时间</td><td>改期、取消都能重做；但<strong>没有「撤销」</strong>，点之前看一眼</td></tr>
 <tr><td>页面显示「客户已删除」</td><td>这个客人被删过了，历史账还在；想继续用就重新建一个</td></tr>
@@ -479,6 +505,9 @@ h2, h3 { page-break-after: avoid; }
 
 【取消 / 爽约】
 卡片点「取消」或「爽约」→ 定金：退还 / 没收 / 先不动
+
+【看整月 / 整周】
+排期 → 左上角切「月 / 周」→ ‹ › 翻页 → 点格子看当天，点彩色横条看那一单
 
 【今天做不完】
 排期 → 当天明细里点第一单的「顺延」→ 选挪多久 → 确认顺延

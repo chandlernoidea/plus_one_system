@@ -51,7 +51,7 @@ table {
 th, td { border: 1px solid #e0d8c8; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
 th { background: #f5f1e8; font-weight: 600; }
 hr { border: 0; border-top: 1px solid #ddd6c8; margin: 7mm 0; }
-img { max-height: 96mm; max-width: 45%; border: 1px solid #e4dccd; border-radius: 2mm; margin: 2mm 0; }
+img { max-height: 112mm; max-width: 52%; border: 1px solid #e4dccd; border-radius: 2mm; margin: 2mm 0; }
 ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
 li { margin-bottom: 1mm; }
 .toc-note { color: #6b6459; font-size: 10pt; }

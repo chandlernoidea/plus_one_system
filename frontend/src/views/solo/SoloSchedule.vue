@@ -1,19 +1,20 @@
 <script setup>
 /**
- * 周排期（P4）。
+ * 排期日历：月视图 + 周视图 + 选中那天的明细。
  *
- * 390px 下不做「7 列等比时间轴」——每列只剩 50px，画出来什么都看不清。
- * 这一页的形态是：上面 7 列看整周密度，下面只展开选中那一天的
- * 空档（可插队）与预约（可作顺延起点），右上角进当天作业单。
+ * 为什么不做「7 列等比时间轴」：390px 手机每列只剩 50px，画出来什么都看不清。
+ * 所以格子里的预约统一用彩色横条表示（颜色＝状态），点横条看详情，点格子看当天明细。
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SoloLayout from './SoloLayout.vue'
+import SoloSheet from '../../components/solo/SoloSheet.vue'
+import SoloCalendar from '../../components/solo/SoloCalendar.vue'
 import BookingCreateSheet from '../../components/solo/BookingCreateSheet.vue'
 import ShiftSheet from '../../components/solo/ShiftSheet.vue'
 import * as api from '../../api/solo'
-import { addDays, fromKey, startOfWeek, timeText, toKey } from '../../utils/date'
+import { addDays, addMonths, fromKey, startOfMonth, startOfWeek, timeText, toKey } from '../../utils/date'
 
 const WEEK_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 const OCCUPY = ['BOOKED', 'ARRIVED', 'IN_SERVICE']
@@ -23,17 +24,22 @@ const STATUS_LABEL = {
   ARRIVED: '已到店',
   IN_SERVICE: '服务中',
   COMPLETED: '已完成',
+  CANCELLED: '已取消',
   NO_SHOW: '爽约'
 }
 const CHANGE_LABEL = { SHIFT: '顺延', RESCHEDULE: '改期', JUMP: '插队' }
+const DEPOSIT_LABEL = { NONE: '未收', COLLECTED: '已收', REFUNDED: '已退', FORFEITED: '已没收' }
 
 const router = useRouter()
+const todayKey = toKey(new Date())
 
-const weekStart = ref(toKey(startOfWeek(new Date())))
-const week = ref(null)
+const mode = ref('month')
+const anchor = ref(todayKey)
+const calendar = ref({})
+const selectedDate = ref(todayKey)
+const dayDetail = ref(null)
 const styles = ref([])
 const pending = ref([])
-const selectedDate = ref(toKey(new Date()))
 const loading = ref(false)
 
 const jumpVisible = ref(false)
@@ -42,64 +48,89 @@ const jumpTime = ref('')
 const shiftVisible = ref(false)
 const shiftTarget = ref(null)
 
-async function load() {
-  loading.value = true
-  try {
-    const [weekResponse, styleResponse, pendingResponse] = await Promise.all([
-      api.fetchWeekSchedule(weekStart.value),
-      api.fetchStyles({ enabled: 1 }),
-      api.fetchPendingChanges()
-    ])
-    week.value = weekResponse.data.data
-    styles.value = styleResponse.data.data || []
-    pending.value = pendingResponse.data.data || []
+const detailVisible = ref(false)
+const detailBooking = ref(null)
 
-    const dates = (week.value?.days || []).map((day) => day.date)
-    if (!dates.includes(selectedDate.value)) {
-      selectedDate.value = dates.includes(toKey(new Date())) ? toKey(new Date()) : dates[0]
-    }
-  } catch (error) {
-    // 提示已由拦截器统一给出
-  } finally {
-    loading.value = false
-  }
-}
+/** 网格首日：月视图从当月 1 号所在周的周一，周视图从本周周一 */
+const gridStart = computed(() => {
+  const base = mode.value === 'month' ? startOfMonth(fromKey(anchor.value)) : fromKey(anchor.value)
+  return toKey(mode.value === 'month' ? startOfWeek(base) : startOfWeek(base))
+})
 
-onMounted(load)
+const gridDays = computed(() => {
+  const start = fromKey(gridStart.value)
+  const count = mode.value === 'month' ? 42 : 7
+  const month = fromKey(anchor.value).getMonth()
 
-const days = computed(() =>
-  (week.value?.days || []).map((day, index) => {
-    const active = (day.bookings || []).filter((booking) => booking.status !== 'CANCELLED')
+  return Array.from({ length: count }, (_, index) => {
+    const date = addDays(start, index)
+    const key = toKey(date)
     return {
-      ...day,
-      dow: WEEK_LABELS[index],
-      dayNum: Number(day.date.slice(8)),
-      isToday: day.date === toKey(new Date()),
-      active,
-      count: active.length,
-      minutes: day.stats?.plannedMinutes || 0,
-      gaps: day.gaps || []
+      date: key,
+      dayNum: date.getDate(),
+      dow: WEEK_LABELS[(date.getDay() + 6) % 7],
+      isToday: key === todayKey,
+      inMonth: date.getMonth() === month,
+      bookings: calendar.value[key] || []
     }
   })
+})
+
+/** 月表最下面整周都不属于当月就裁掉，别留一条空行 */
+const visibleDays = computed(() => {
+  if (mode.value !== 'month') {
+    return gridDays.value
+  }
+  const rows = []
+  for (let i = 0; i < gridDays.value.length; i += 7) {
+    rows.push(gridDays.value.slice(i, i + 7))
+  }
+  while (rows.length > 1 && rows[rows.length - 1].every((day) => !day.inMonth)) {
+    rows.pop()
+  }
+  return rows.flat()
+})
+
+const rangeTotals = computed(() => {
+  const list = visibleDays.value.flatMap((day) => day.bookings)
+  const active = list.filter((booking) => booking.status !== 'CANCELLED')
+  return {
+    count: active.length,
+    minutes: active.reduce((sum, booking) => sum + (booking.plannedMinutes || 0), 0)
+  }
+})
+
+const title = computed(() => {
+  if (mode.value === 'month') {
+    const date = fromKey(anchor.value)
+    return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`
+  }
+  const first = fromKey(gridStart.value)
+  const last = addDays(first, 6)
+  return `${first.getMonth() + 1}.${first.getDate()} – ${last.getMonth() + 1}.${last.getDate()}`
+})
+
+const subtitle = computed(() =>
+  `${rangeTotals.value.count} 单 · 约 ${hoursText(rangeTotals.value.minutes)} 小时`
 )
 
-const selectedDay = computed(() => days.value.find((day) => day.date === selectedDate.value) || null)
+function hoursText(minutes) {
+  return (minutes / 60).toFixed(minutes % 60 ? 1 : 0)
+}
 
-const weekTotals = computed(() => ({
-  count: days.value.reduce((sum, day) => sum + day.count, 0),
-  minutes: days.value.reduce((sum, day) => sum + day.minutes, 0),
-  gaps: days.value.reduce((sum, day) => sum + day.gaps.length, 0)
-}))
-
-const hoursText = (minutes) => (minutes / 60).toFixed(minutes % 60 ? 1 : 0)
-
-const weekLabel = computed(() => {
-  if (!days.value.length) {
-    return ''
+const selectedDay = computed(() => {
+  if (!dayDetail.value) {
+    return null
   }
-  const first = days.value[0].date
-  const last = days.value[days.value.length - 1].date
-  return `${Number(first.slice(5, 7))}.${first.slice(8)} – ${Number(last.slice(5, 7))}.${last.slice(8)}`
+  const date = fromKey(dayDetail.value.date)
+  return {
+    ...dayDetail.value,
+    dow: WEEK_LABELS[(date.getDay() + 6) % 7],
+    dayNum: date.getDate(),
+    isToday: dayDetail.value.date === todayKey,
+    active: (dayDetail.value.bookings || []).filter((booking) => booking.status !== 'CANCELLED'),
+    minutes: dayDetail.value.stats?.plannedMinutes || 0
+  }
 })
 
 const selectedLabel = computed(() => {
@@ -110,12 +141,12 @@ const selectedLabel = computed(() => {
   return `${Number(day.date.slice(5, 7))} 月 ${day.dayNum} 日 ${day.dow}${day.isToday ? ' · 今天' : ''}`
 })
 
-/** 选中那天的空档与预约，按时间交错。 */
+/** 选中那天的空档与预约，按时间交错 */
 const segments = computed(() => {
   if (!selectedDay.value) {
     return []
   }
-  const gaps = selectedDay.value.gaps.map((gap) => ({
+  const gaps = (selectedDay.value.gaps || []).map((gap) => ({
     type: 'gap',
     start: gap.start,
     end: gap.end,
@@ -130,38 +161,91 @@ const segments = computed(() => {
   return [...gaps, ...bookings].sort((a, b) => (a.start < b.start ? -1 : 1))
 })
 
-function toneOf(status) {
-  if (status === 'WAIT_DEPOSIT') {
-    return 'wait'
+async function loadCalendar() {
+  loading.value = true
+  try {
+    const days = visibleDays.value
+    const from = days.length ? days[0].date : gridStart.value
+    const to = days.length ? days[days.length - 1].date : gridStart.value
+    const response = await api.fetchCalendar(from, to)
+    const map = {}
+    for (const day of response.data.data.days || []) {
+      map[day.date] = day.bookings || []
+    }
+    calendar.value = map
+  } catch (error) {
+    // 提示已由拦截器统一给出
+  } finally {
+    loading.value = false
   }
-  if (status === 'BOOKED') {
-    return 'booked'
-  }
-  if (status === 'ARRIVED') {
-    return 'arrived'
-  }
-  if (status === 'IN_SERVICE') {
-    return 'service'
-  }
-  return 'done'
 }
 
-function selectDay(date) {
+async function loadDay(date) {
+  try {
+    const response = await api.fetchDaySchedule(date)
+    dayDetail.value = response.data.data
+  } catch (error) {
+    dayDetail.value = null
+  }
+}
+
+async function loadPending() {
+  try {
+    const response = await api.fetchPendingChanges()
+    pending.value = response.data.data || []
+  } catch (error) {
+    pending.value = []
+  }
+}
+
+async function refresh() {
+  await Promise.all([loadCalendar(), loadDay(selectedDate.value), loadPending()])
+}
+
+onMounted(async () => {
+  try {
+    const response = await api.fetchStyles({ enabled: 1 })
+    styles.value = response.data.data || []
+  } catch (error) {
+    styles.value = []
+  }
+  await loadCalendar()
+  await loadDay(selectedDate.value)
+  await loadPending()
+})
+
+watch(mode, async () => {
+  await loadCalendar()
+})
+
+function selectDate(date) {
   selectedDate.value = date
+  loadDay(date)
+}
+
+function shiftRange(direction) {
+  const base = fromKey(anchor.value)
+  anchor.value = toKey(mode.value === 'month' ? addMonths(base, direction) : addDays(base, direction * 7))
+  loadCalendar()
+}
+
+function goToday() {
+  anchor.value = todayKey
+  selectDate(todayKey)
+  loadCalendar()
+}
+
+function switchMode(next) {
+  mode.value = next
+}
+
+function openBooking(booking) {
+  detailBooking.value = booking
+  detailVisible.value = true
 }
 
 function openDay(date) {
   router.push({ path: '/solo/today', query: { date } })
-}
-
-function shiftWeek(weeks) {
-  weekStart.value = toKey(addDays(fromKey(weekStart.value), weeks * 7))
-  load()
-}
-
-function backToThisWeek() {
-  weekStart.value = toKey(startOfWeek(new Date()))
-  load()
 }
 
 function openJump(start) {
@@ -178,7 +262,12 @@ function openShift(booking) {
 async function handleShifted(result) {
   ElMessage.success(`已顺延 ${result.count} 单，生成待通知清单`)
   shiftTarget.value = null
-  await load()
+  await refresh()
+}
+
+async function handleJumped() {
+  ElMessage.success('插队成功')
+  await refresh()
 }
 
 async function markNotified(change) {
@@ -211,55 +300,53 @@ async function copyText(text) {
   ElMessage.success('话术已复制')
 }
 
-async function handleJumped() {
-  ElMessage.success('插队成功')
-  await load()
+function stylesOf(booking) {
+  return (booking?.items || []).map((item) => item.styleName).join(' + ')
+}
+
+function amountOf(booking) {
+  return (booking?.items || []).reduce((sum, item) => sum + Number(item.price || 0), 0)
+}
+
+function toneOf(status) {
+  if (status === 'WAIT_DEPOSIT') return 'wait'
+  if (status === 'ARRIVED') return 'arrived'
+  if (status === 'IN_SERVICE') return 'service'
+  if (status === 'NO_SHOW') return 'noshow'
+  if (status === 'CANCELLED') return 'void'
+  if (status === 'COMPLETED') return 'done'
+  return 'booked'
 }
 </script>
 
 <template>
   <SoloLayout>
     <header class="lede">
-      <span class="eyebrow">SOLO · WEEK</span>
-      <h1 class="lede-title">本周 {{ weekTotals.count }} 单</h1>
-      <p class="lede-note">
-        {{ weekLabel }} · 占用 {{ hoursText(weekTotals.minutes) }} 小时 · 空档 {{ weekTotals.gaps }} 段
-      </p>
+      <span class="eyebrow">SOLO · CALENDAR</span>
+      <h1 class="lede-title">{{ title }}</h1>
+      <p class="lede-note">{{ subtitle }}<span v-if="loading" class="mono"> · 读取中…</span></p>
     </header>
 
-    <div class="week-nav">
-      <button type="button" class="nav-btn" @click="shiftWeek(-1)">‹ 上周</button>
-      <button type="button" class="nav-btn" @click="backToThisWeek">本周</button>
-      <button type="button" class="nav-btn" @click="shiftWeek(1)">下周 ›</button>
-      <span v-if="loading" class="nav-loading mono">读取中…</span>
+    <div class="toolbar">
+      <div class="switch" role="tablist">
+        <button type="button" class="switch-btn" :class="{ 'is-active': mode === 'month' }" @click="switchMode('month')">月</button>
+        <button type="button" class="switch-btn" :class="{ 'is-active': mode === 'week' }" @click="switchMode('week')">周</button>
+      </div>
+
+      <div class="navs">
+        <button type="button" class="nav-btn" @click="shiftRange(-1)">‹</button>
+        <button type="button" class="nav-btn" @click="goToday">今天</button>
+        <button type="button" class="nav-btn" @click="shiftRange(1)">›</button>
+      </div>
     </div>
 
-    <!-- 周视图：7 列看密度 -->
-    <section class="week" aria-label="本周排期">
-      <button
-        v-for="day in days"
-        :key="day.date"
-        type="button"
-        class="day-col"
-        :class="{ 'is-selected': day.date === selectedDate, 'is-today': day.isToday }"
-        @click="selectDay(day.date)"
-      >
-        <span class="dow">{{ day.dow }}</span>
-        <span class="dnum mono">{{ day.dayNum }}</span>
-        <span class="dcount mono">{{ day.count || '·' }}</span>
-        <span class="mini">
-          <span
-            v-for="booking in day.active.slice(0, 3)"
-            :key="booking.id"
-            class="mini-block"
-            :class="`tone-${toneOf(booking.status)}`"
-          >
-            {{ timeText(booking.startAt) }}
-          </span>
-          <span v-if="day.active.length > 3" class="mini-more mono">+{{ day.active.length - 3 }}</span>
-        </span>
-      </button>
-    </section>
+    <SoloCalendar
+      :mode="mode"
+      :days="visibleDays"
+      :selected="selectedDate"
+      @select="selectDate"
+      @open="openBooking"
+    />
 
     <!-- 选中那天的空档与预约 -->
     <section class="detail" v-if="selectedDay">
@@ -267,8 +354,8 @@ async function handleJumped() {
         <div class="detail-titles">
           <h2 class="detail-title">{{ selectedLabel }}</h2>
           <p class="detail-note">
-            {{ selectedDay.count }} 单 · 占用 {{ hoursText(selectedDay.minutes) }} 小时 ·
-            空档 {{ selectedDay.gaps.length }} 段
+            {{ selectedDay.active.length }} 单 · 占用 {{ hoursText(selectedDay.minutes) }} 小时 ·
+            空档 {{ (selectedDay.gaps || []).length }} 段
           </p>
         </div>
         <button type="button" class="enter" @click="openDay(selectedDay.date)">作业单 ↗</button>
@@ -295,7 +382,7 @@ async function handleJumped() {
           </template>
 
           <template v-else>
-            <span class="slot-main">
+            <button type="button" class="slot-main slot-main--btn" @click="openBooking(segment.booking)">
               <span class="slot-client">
                 <span class="mono slot-code">{{ segment.booking.clientCode }}</span>
                 {{ segment.booking.clientNickname }}
@@ -303,7 +390,7 @@ async function handleJumped() {
               <span class="slot-status" :class="`tone-${toneOf(segment.booking.status)}`">
                 {{ STATUS_LABEL[segment.booking.status] || segment.booking.status }}
               </span>
-            </span>
+            </button>
             <button
               v-if="OCCUPY.includes(segment.booking.status)"
               type="button"
@@ -347,6 +434,62 @@ async function handleJumped() {
       </article>
     </section>
 
+    <!-- 点横条看详情 -->
+    <SoloSheet
+      :visible="detailVisible"
+      title="这一单"
+      note="点「打开作业单」可以到当天页面处理"
+      @update:visible="detailVisible = $event"
+    >
+      <template v-if="detailBooking">
+        <div class="d-head">
+          <span class="d-code mono">{{ detailBooking.clientCode }}</span>
+          <span class="d-name">{{ detailBooking.clientNickname }}</span>
+          <span class="d-status" :class="`tone-${toneOf(detailBooking.status)}`">
+            {{ STATUS_LABEL[detailBooking.status] || detailBooking.status }}
+          </span>
+        </div>
+
+        <dl class="d-list">
+          <div class="d-row">
+            <dt>时间</dt>
+            <dd class="mono">
+              {{ timeText(detailBooking.startAt) }} – {{ timeText(detailBooking.endAt) }}
+              <em>（{{ detailBooking.plannedMinutes }} 分钟 + 缓冲 {{ detailBooking.bufferMinutes }}）</em>
+            </dd>
+          </div>
+          <div class="d-row">
+            <dt>项目</dt>
+            <dd>{{ stylesOf(detailBooking) || '—' }}</dd>
+          </div>
+          <div class="d-row">
+            <dt>金额</dt>
+            <dd>¥{{ amountOf(detailBooking) }}</dd>
+          </div>
+          <div class="d-row">
+            <dt>定金</dt>
+            <dd>{{ DEPOSIT_LABEL[detailBooking.depositState] || '未收' }}</dd>
+          </div>
+          <div class="d-row" v-if="detailBooking.remark">
+            <dt>备注</dt>
+            <dd>{{ detailBooking.remark }}</dd>
+          </div>
+        </dl>
+      </template>
+
+      <template #footer>
+        <button type="button" class="btn" @click="detailVisible = false">关闭</button>
+        <button
+          v-if="detailBooking"
+          type="button"
+          class="btn btn-primary wide"
+          @click="openDay(detailBooking.startAt.slice(0, 10))"
+        >
+          打开作业单
+        </button>
+      </template>
+    </SoloSheet>
+
     <BookingCreateSheet
       :visible="jumpVisible"
       mode="jump"
@@ -388,145 +531,65 @@ async function handleJumped() {
   font-size: 11px;
 }
 
-.week-nav {
+.toolbar {
   display: flex;
   align-items: center;
   gap: var(--s2);
   margin-bottom: var(--s3);
 }
 
-.nav-btn {
-  padding: 3px 8px;
-  border: 1px solid var(--line);
+.switch {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+}
+
+.switch-btn {
+  padding: 4px 14px;
+  border: 0;
   background: transparent;
   color: var(--ink-3);
   cursor: pointer;
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
 }
 
-.nav-btn:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+.switch-btn.is-active {
+  background: var(--ink);
+  color: var(--paper-raised);
 }
 
-.nav-loading {
-  margin-left: auto;
-  color: var(--ink-4);
-  font-size: 10px;
-}
-
-/* ---- 7 列 ---- */
-
-.week {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 3px;
-  margin-bottom: var(--s4);
-}
-
-.day-col {
+.navs {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1px;
-  padding: 5px 3px 6px;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.nav-btn {
+  min-width: 34px;
+  padding: 4px 9px;
   border: 1px solid var(--line);
-  border-top-width: 2px;
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
   font-family: var(--font-ui);
-  text-align: center;
+  font-size: 12px;
 }
 
-.day-col.is-today {
-  border-top-color: var(--lacquer);
-}
-
-.day-col.is-selected {
+.nav-btn:hover {
   border-color: var(--ink);
-  background: var(--paper-raised);
 }
-
-.dow {
-  color: var(--ink-4);
-  font-size: 9px;
-  letter-spacing: 0.04em;
-}
-
-.dnum {
-  font-family: var(--font-display);
-  font-size: 15px;
-  line-height: 1.2;
-}
-
-.dcount {
-  color: var(--ink-4);
-  font-size: 8px;
-  line-height: 1.2;
-}
-
-.mini {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 3px;
-}
-
-.mini-block {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  padding: 1px 0 1px 2px;
-  border-left: 2px solid var(--ink-4);
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 7.5px;
-  line-height: 1.35;
-  text-overflow: clip;
-  white-space: nowrap;
-}
-
-.mini-more {
-  color: var(--ink-4);
-  font-size: 7.5px;
-}
-
-.tone-wait {
-  border-left-color: var(--ochre);
-}
-
-.tone-booked {
-  border-left-color: var(--moss);
-}
-
-.tone-arrived {
-  border-left-color: var(--slate);
-}
-
-.tone-service {
-  border-left-color: var(--lacquer);
-}
-
-.tone-done {
-  border-left-color: var(--ink-4);
-}
-
-/* ---- 选中日详情 ---- */
 
 .detail {
-  margin-bottom: var(--s5);
+  margin-bottom: var(--s4);
 }
 
 .detail-head {
   display: flex;
   align-items: flex-start;
   gap: var(--s2);
-  padding-bottom: var(--s2);
-  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--s2);
 }
 
 .detail-titles {
@@ -535,37 +598,41 @@ async function handleJumped() {
 
 .detail-title {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 16px;
+  font-weight: 400;
 }
 
 .detail-note {
-  color: var(--ink-4);
-  font-size: 10px;
+  color: var(--ink-3);
+  font-size: 11px;
 }
 
 .enter {
   flex: none;
   margin-left: auto;
   padding: 4px 10px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--line-strong);
   background: transparent;
-  color: var(--ink);
+  color: var(--ink-2);
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 11px;
-  white-space: nowrap;
 }
 
-.enter:hover {
-  background: var(--ink);
-  color: var(--paper-raised);
+.empty-line {
+  padding: var(--s3) 0;
+  color: var(--ink-4);
+  font-size: 12px;
+}
+
+.empty-line em {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-style: normal;
 }
 
 .slots {
-  margin: 0;
-  padding: 0;
   list-style: none;
 }
 
@@ -573,106 +640,91 @@ async function handleJumped() {
   display: flex;
   align-items: center;
   gap: var(--s2);
-  padding: 7px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--line-soft);
 }
 
 .slot-time {
   flex: none;
-  width: 34px;
-  color: var(--ink-2);
+  width: 44px;
+  color: var(--ink-3);
   font-size: 10px;
-  line-height: 1.3;
+  line-height: 1.5;
 }
 
 .slot-time em {
   display: block;
   color: var(--ink-4);
-  font-size: 8px;
   font-style: normal;
 }
 
 .slot-main {
   display: flex;
-  min-width: 0;
   flex: 1 1 auto;
-  align-items: baseline;
+  align-items: center;
   gap: var(--s2);
+  min-width: 0;
 }
 
-.gap-main {
-  color: var(--ink-3);
-}
-
-.gap-label {
-  font-family: var(--font-display);
-  font-size: 12px;
-}
-
-.gap-value {
-  font-size: 10px;
+.slot-main--btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
 }
 
 .slot-client {
   overflow: hidden;
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .slot-code {
+  margin-right: 4px;
   color: var(--ink-4);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .slot-status {
   flex: none;
-  font-size: 9px;
-  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  font-size: 10px;
 }
 
-.slot-status.tone-booked {
-  color: var(--moss);
-}
-
-.slot-status.tone-wait {
-  color: var(--ochre);
-}
-
-.slot-status.tone-service {
-  color: var(--lacquer);
-}
-
-.slot-status.tone-arrived {
-  color: var(--slate);
-}
-
-.slot-status.tone-done {
-  color: var(--ink-4);
-}
+.slot-status.tone-wait { color: var(--ochre); }
+.slot-status.tone-booked { color: #3a5a7a; }
+.slot-status.tone-arrived { color: #2f6b6b; }
+.slot-status.tone-service { color: var(--moss); }
+.slot-status.tone-done { color: var(--ink-4); }
+.slot-status.tone-noshow { color: var(--lacquer); }
 
 .slot-action {
   flex: none;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border: 1px solid var(--line);
   background: transparent;
-  color: var(--ink-3);
+  color: var(--ink-2);
   cursor: pointer;
   font-family: var(--font-ui);
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 11px;
 }
 
-.slot-action:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+.gap-main {
+  color: var(--ink-3);
+  font-size: 11px;
 }
 
-/* ---- 待通知 ---- */
+.gap-label {
+  letter-spacing: 0.1em;
+}
 
 .pending {
-  border-top: 1px solid var(--line);
-  padding-top: var(--s3);
+  margin-bottom: var(--s4);
 }
 
 .pending-head {
@@ -685,7 +737,6 @@ async function handleJumped() {
 .pending-title {
   font-family: var(--font-display);
   font-size: 15px;
-  letter-spacing: 0.04em;
 }
 
 .pending-count {
@@ -706,62 +757,115 @@ async function handleJumped() {
 
 .pending-row {
   display: flex;
-  align-items: baseline;
+  justify-content: space-between;
   gap: var(--s2);
 }
 
 .pending-name {
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 13px;
 }
 
 .pending-type {
-  flex: none;
-  color: var(--lacquer);
-  font-size: 9px;
-  letter-spacing: 0.06em;
+  color: var(--ink-4);
+  font-size: 10px;
 }
 
 .pending-time {
-  margin-top: 1px;
+  margin-top: 2px;
   color: var(--ink-3);
   font-size: 11px;
 }
 
 .pending-actions {
   display: flex;
-  gap: var(--s2);
-  margin-top: var(--s2);
+  gap: 6px;
+  margin-top: 6px;
 }
 
-.empty-line {
-  padding: var(--s3) 0;
-  color: var(--ink-3);
+/* ---------- 详情抽屉 ---------- */
+.d-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+
+.d-code {
+  color: var(--ink-4);
   font-size: 11px;
 }
 
-.empty-line em {
-  display: block;
-  margin-top: 2px;
+.d-name {
+  font-family: var(--font-display);
+  font-size: 19px;
+}
+
+.d-status {
+  margin-left: auto;
+  font-size: 11px;
+}
+
+.d-status.tone-wait { color: var(--ochre); }
+.d-status.tone-booked { color: #3a5a7a; }
+.d-status.tone-arrived { color: #2f6b6b; }
+.d-status.tone-service { color: var(--moss); }
+.d-status.tone-done { color: var(--ink-4); }
+.d-status.tone-noshow { color: var(--lacquer); }
+
+.d-list {
+  margin: 0;
+}
+
+.d-row {
+  display: flex;
+  gap: var(--s2);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.d-row dt {
+  flex: none;
+  width: 42px;
+  color: var(--ink-4);
+  font-size: 11px;
+}
+
+.d-row dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.d-row dd em {
   color: var(--ink-4);
   font-size: 10px;
   font-style: normal;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+.btn {
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
 }
 
-@media (max-width: 360px) {
-  .mini-block {
-    font-size: 7px;
-  }
+.btn-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper-raised);
+}
 
-  .dnum {
-    font-size: 13px;
+.wide {
+  flex: 1 1 auto;
+}
+
+@media (min-width: 900px) {
+  .detail,
+  .pending {
+    max-width: 820px;
   }
 }
 </style>

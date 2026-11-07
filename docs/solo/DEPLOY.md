@@ -1,4 +1,4 @@
-# 部署说明 · V0.8.5
+# 部署说明 · V0.8.6
 
 > 目标：把单人版跑在**你自己的服务器**上，一个人用、手机能开。
 > 装好以后的日常运维（命令、备份、巡检、故障处理、安全基线）见 [OPS.md](OPS.md)。
@@ -29,7 +29,7 @@
 ```
 /opt/one-finger/
 ├── backend/          # jar 与配置文件
-│   ├── nail-demo-backend-0.8.5.jar
+│   ├── nail-demo-backend-0.8.6.jar
 │   └── app.env       # 环境变量（chmod 600）
 ├── uploads/          # 封面等上传文件
 └── backups/          # 备份
