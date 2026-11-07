@@ -5,15 +5,10 @@
 -- 3. 与 schema.sql 保持一致：InnoDB + utf8mb4，不建外键（关联一致性由应用层保证）。
 -- 4. 实体映射见 com.nail.demo.solo.entity，脚本字段需与实体逐列对齐。
 
-CREATE DATABASE IF NOT EXISTS nail_demo
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_unicode_ci;
-
 ALTER DATABASE nail_demo
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE nail_demo;
 
 -- ------------------------------------------------------------
 -- 客户档案：客户不是账号，标识 = 短号 + 昵称 + 手机后 4 位（选填）

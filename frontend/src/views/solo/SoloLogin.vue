@@ -58,7 +58,7 @@ function fillDemo() {
         <span class="brand-mark" aria-hidden="true">指</span>
         <span class="brand-text">
           <span class="brand-name">指间工作室</span>
-          <span class="brand-sub mono">SOLO STUDIO · V0.8.7</span>
+          <span class="brand-sub mono">SOLO STUDIO · V0.8.8</span>
         </span>
       </header>
 

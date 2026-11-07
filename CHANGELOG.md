@@ -82,6 +82,33 @@
 
 ---
 
+## [0.8.8] · 2026-11-07
+
+### 精简（只删不加，不改任何行为）
+
+这条分支从 `main` 的多角色答辩版切出来时，把整套多角色代码也带过来了。功能上一直靠「路由不挂 +
+接口加 ADMIN 权限」隔离，但仓库和数据库里堆着用不到的东西。这版做减法：
+
+- **前端**：删掉多角色 4 个首页 + `views/admin|staff|customer` 12 个页面、5 个通用组件、
+  10 个 API 模块，以及没有任何引用的 `composables/`、`utils/appointments.js`、`utils/dateBlocks.js`、
+  `components/calendar/` 和 `public/demo/` 示意图。
+  前端源文件从 60+ → 32 个，`src/api` 只剩 `auth / request / solo`。
+- **后端**：删掉多角色的 controller / service / entity / repository / dto（预约、排班、工时、
+  评审、结算、改期、备料、员工…）共 60 余个类，只留 **账号鉴权 + solo 业务**。
+  顺带移除了启动时会去查 `appointment` 表的两个定时任务和一个回填 Runner。
+- **数据库**：`schema.sql` 从 14 张表缩到 3 张（`sys_user / sys_role / sys_user_role`），
+  `data.sql` 从 684 行缩到 22 行（只种一个 admin）。
+  **新装环境由 26 张表变成 15 张**（3 账号 + 12 `solo_*`）。
+- 两个 schema 脚本都去掉了写死的 `CREATE DATABASE nail_demo` / `USE nail_demo`，
+  目标库改由 JDBC URL 决定——之前在别的库名上启动会「表建到 nail_demo、应用查另一个库」。
+- 删掉 `/api/hello` 调试接口。
+
+**对现有部署无影响**：线上库里的多角色表不会被删（脚本只建不删），`SPRING_SQL_INIT_MODE=never`
+也不会重跑；只是以后新装的环境是干净的 15 张表。
+
+验证：在空库上从零启动 → 15 张表、admin 可登录；建客户 / 款式 / 建单 / 收定金 /
+到店-开始-完成 / 日历 / 记账 / 汇总 / 提醒 / 设置 / 导出 CSV 共 10 项全部通过；单测 18 例全绿。
+
 ## [0.8.7] · 2026-11-07
 
 ### 修复

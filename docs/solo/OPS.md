@@ -16,7 +16,7 @@
 | 后端服务 | systemd `one-finger` | `java -jar /opt/one-finger/backend/app.jar` |
 | 后端配置 | `/opt/one-finger/backend/app.env`（600） | 数据库、JWT 密钥、端口 |
 | 前端 | `/var/www/one-finger` | nginx 静态目录 |
-| 数据库 | MariaDB，库 `nail_demo`，用户 `nail`@127.0.0.1 | 26 张表（`solo_*` 11 张 + 多角色版表） |
+| 数据库 | MariaDB，库 `nail_demo`，用户 `nail`@127.0.0.1 | 15 张表（`solo_*` 12 张 + 账号 3 张）；0.8.8 起新装不再建多角色表 |
 | 上传文件 | `/opt/one-finger/uploads` | 款式封面 |
 | 备份 | `/opt/one-finger/backups`（700） | 每天 03:00，保留 14 天 |
 | 日志 | `journalctl -u one-finger`、`/var/log/nginx/` | journald 上限 200M |
